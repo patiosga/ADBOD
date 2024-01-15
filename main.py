@@ -6,8 +6,8 @@ from ExperimentTSB import experiment
 
 
 
-fstatic =open("/results/resultsKR.csv", "a+")
-fdyn =open("/results/results.csv", "a+")
+fstatic =open("./results/resultsKR.csv", "a+")
+fdyn =open("./results/results.csv", "a+")
 LOGRESULTS=False
 def rumsingleexpkr(parms):
     #(k,r,window,slide,slidingWindow,features,normalize,i,dataset)
@@ -35,7 +35,7 @@ def rumsingleexpkr(parms):
 
 # Run Distance based outlier detection for all data files in dataset
 # using given parameters, for multiple k and R parameters
-def check_many_kt(slide=100, window=200,slidingWindow=None,features=False,normalize=False,dataset="../../data/YAHOO/Yahoo_A2synthetic_"):
+def check_many_kt(slide=100, window=200,slidingWindow=None,features=False,normalize=False,dataset="./data/YAHOO/Yahoo_A2synthetic_"):
     maxall=0
     keepmax=None
     krparams=[]
@@ -64,7 +64,7 @@ def check_many_kt(slide=100, window=200,slidingWindow=None,features=False,normal
     print(keepmax)
     return keepmax
 
-def onerun(slide=100, window=200,slidingWindow=None,keepmax=(10,0.5),debug=False,features=False,normalize=False,dataset="../../data/YAHOO/Yahoo_A2synthetic_"):
+def onerun(slide=100, window=200,slidingWindow=None,keepmax=(10,0.5),debug=False,features=False,normalize=False,dataset="./data/YAHOO/Yahoo_A2synthetic_"):
     dynallf1 = []
     statallf1 = []
     counter = 0
@@ -85,7 +85,7 @@ def onerun(slide=100, window=200,slidingWindow=None,keepmax=(10,0.5),debug=False
             # print(f"static: {exp.staticf1}")
             # print(f"dyn: {exp.dynamicf1}")
         except Exception as e:
-            print(str(e))
+            #print(str(e))
             continue
 
     print(f" dyn mean: {sum(dynallf1) / counter}")
@@ -99,11 +99,11 @@ def onerun(slide=100, window=200,slidingWindow=None,keepmax=(10,0.5),debug=False
 
 
 # Run technique to all data under the folder of given dataset using given parameters
-def testYahoo(slide=100, window=200,slidingWindow=None,features=False,normalize=False,dataset="../../data/YAHOO/Yahoo_A1real_"):
-    # datasetname = f'../../data/YAHOO/Yahoo_A1real_{i}_data.out'
-    # datasetname = f'../../data/YAHOO/YahooA3Benchmark-TS{i}_data.out'
-    # datasetname = f'../../data/YAHOO/YahooA4Benchmark-TS{i}_data.out'
-    #"../../data/YAHOO/Yahoo_A1synthetic_"
+def testYahoo(slide=100, window=200,slidingWindow=None,features=False,normalize=False,dataset="./data/YAHOO/Yahoo_A1real_"):
+    # datasetname = f'./data/YAHOO/Yahoo_A1real_{i}_data.out'
+    # datasetname = f'./data/YAHOO/YahooA3Benchmark-TS{i}_data.out'
+    # datasetname = f'./data/YAHOO/YahooA4Benchmark-TS{i}_data.out'
+    #"./data/YAHOO/Yahoo_A1synthetic_"
 
     keepmax=check_many_kt(slide=slide, window=window,slidingWindow=slidingWindow,features=features,normalize=normalize,dataset=dataset)
     onerun(slide=slide, window=window, slidingWindow=slidingWindow, keepmax=keepmax,features=features,normalize=normalize,dataset=dataset)
@@ -130,21 +130,21 @@ if __name__ == "__main__" :
 
 
     ######## For multiple combinations ###################################3
-    #run_all_for_dataset(200, 100, "../../data/YAHOO/Yahoo_A1real_")
-    #run_all_for_dataset(200, 100, "../../data/YAHOO/Yahoo_A2synthetic_")
-    #run_all_for_dataset(200, 100, "../../data/YAHOO/YahooA3Benchmark-TS")
-    #run_all_for_dataset(200, 100, "../../data/YAHOO/YahooA4Benchmark-TS")
+    #run_all_for_dataset(200, 100, "./data/YAHOO/Yahoo_A1real_")
+    #run_all_for_dataset(200, 100, "./data/YAHOO/Yahoo_A2synthetic_")
+    #run_all_for_dataset(200, 100, "./data/YAHOO/YahooA3Benchmark-TS")
+    #run_all_for_dataset(200, 100, "./data/YAHOO/YahooA4Benchmark-TS")
 
 
     #### FOR a single combination ####################################3
-    # testYahoo(slide=200, window=400, slidingWindow=10,features=True,normalize=False,dataset="../../data/YAHOO/Yahoo_A1synthetic_")
+    # testYahoo(slide=200, window=400, slidingWindow=10,features=True,normalize=False,dataset="./data/YAHOO/Yahoo_A1synthetic_")
 
 
     ### FOR Multuple KR using Distance based on all data files in dataset:
-    #check_many_kt(slide=100, window=200, slidingWindow=None, features=False, normalize=False,dataset="../../data/YAHOO/Yahoo_A2synthetic_")
+    #check_many_kt(slide=100, window=200, slidingWindow=None, features=False, normalize=False,dataset="./data/YAHOO/Yahoo_A2synthetic_")
 
     ### FOR a single parametrization of DynamicKR and Distance based K-R on all data files in dataset:
-    onerun(slide=100, window=200,slidingWindow=None,keepmax=(10,0.5),debug=False,features=False,normalize=False,dataset="../../data/YAHOO/Yahoo_A2synthetic_")
+    onerun(slide=100, window=200,slidingWindow=None,keepmax=(10,0.5),debug=False,features=False,normalize=False,dataset="./data/YAHOO/Yahoo_A2synthetic_")
 
     # A single Experiment for a single data file using Distance based and Dynamic technique:
     #experiment(slide=slide, window=window, k=k, r=r, filepath=datasetname, slidingWindow=slidingWindow,

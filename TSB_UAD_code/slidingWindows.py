@@ -2,7 +2,7 @@ from statsmodels.tsa.stattools import acf
 from scipy.signal import argrelextrema
 import numpy as np
 
-from ..utils.metrics import metricor
+from TSB_UAD_code.metrics import metricor
 import matplotlib.patches as mpatches 
 import matplotlib.pyplot as plt
 

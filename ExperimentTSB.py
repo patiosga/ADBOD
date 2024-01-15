@@ -14,7 +14,7 @@ import tsfel
 # Data Preprocessing
 class experiment:
 
-    def __init__(self,slide=100,window=200,k=15,r=0.5,filepath = '../../data/YAHOO/Yahoo_A1real_1_data.out',slidingWindow=None,onlystatic=False,features=False,debug=False,normalize=False):
+    def __init__(self,slide=100,window=200,k=15,r=0.5,filepath = './data/YAHOO/Yahoo_A1real_1_data.out',slidingWindow=None,onlystatic=False,features=False,debug=False,normalize=False):
 
         self.debug=debug
         self.features=features
