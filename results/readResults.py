@@ -72,7 +72,7 @@ def evaluate_combination(paramset):
             return []
         if abs(len(f1temp)-len(alldatasets))>10:
             print(f"{comb} -> {len(f1temp)} != {len(alldatasets)}")
-
+            f1temp=[0 for kati in f1temp]
         f1list=[kati for kati in f1temp]
 
     except Exception as e:
@@ -237,9 +237,9 @@ def plotgraph(static,staticnames, dyn,dynNames,target):
     plt.ylim([-0.05, 1.1])
     plt.show()
 
-def constantKR_against_Dyn():
-    dfdyn = pd.read_csv("results_half.csv", header=0)
-    dfstatic = pd.read_csv("resultsKR_half.csv", header=0)
+def constantKR_against_Dyn(extra="_half"):
+    dfdyn = pd.read_csv(f"results{extra}.csv", header=0)
+    dfstatic = pd.read_csv(f"resultsKR{extra}.csv", header=0)
 
     dfdyn["initSubseq"] = dfdyn["initSubseq"].fillna(value=-1)
 
@@ -267,7 +267,7 @@ def constantKR_against_Dyn():
     ######################################33
     print("##########################################################################################333")
     alldatasets, combination, scoremedian, allscores = get_best_on_all_datasets(dfdyn,
-                                                                                parmsspecific={"normalize": [False]},
+                                                                                parmsspecific={"normalize": [True]},
                                                                                 targetfield=target)
     print(f"score: {scoremedian}, len={len(allscores)}")
     print(allscores)
@@ -280,7 +280,7 @@ def constantKR_against_Dyn():
             dynscore.append(s)
 
     alldatasets, combination, scoremedian, allscores = get_best_on_all_datasets(dfstatic,
-                                                                                parmsspecific={"normalize": [False]},
+                                                                                parmsspecific={"normalize": [True]},
                                                                                 targetfield=target)
     print(f"score: {scoremedian}, len={len(allscores)}")
     print(allscores)
@@ -378,15 +378,15 @@ def evaluate_combination_best_kr(paramset):
         return []
     if abs(len(f1temp)-len(alldatasets))>10:
         print(f"{comb} -> {len(f1temp)} != {len(alldatasets)}")
-
+        f1temp=[0 for kati in f1temp]
     f1list=[kati for kati in f1temp]
 
     return (f1list,toreturndatasets)
 
 
-def PertimeseriesBest_vs_Dyn():
-    dfdyn = pd.read_csv("results_half.csv", header=0)
-    dfstatic = pd.read_csv("resultsKR_half.csv", header=0)
+def PertimeseriesBest_vs_Dyn(extra="_half"):
+    dfdyn = pd.read_csv(f"results{extra}.csv", header=0)
+    dfstatic = pd.read_csv(f"resultsKR{extra}.csv", header=0)
 
     dfdyn["initSubseq"] = dfdyn["initSubseq"].fillna(value=-1)
 
@@ -397,7 +397,7 @@ def PertimeseriesBest_vs_Dyn():
 
     print("##########################################################################################333")
     alldatasets, combination, scoremedian, allscores = get_best_on_all_datasets(dfdyn,
-                                                                                parmsspecific={"normalize": [False]},
+                                                                                parmsspecific={"normalize": [True]},
                                                                                 targetfield=target)
     print(f"score: {scoremedian}, len={len(allscores)}")
     print(allscores)
@@ -410,7 +410,7 @@ def PertimeseriesBest_vs_Dyn():
             dynscore.append(s)
 
     alldatasets, combination, scoremedian, allscores = get_best_with_different_k_R(dfstatic,
-                                                                                parmsspecific={"normalize": [False]},
+                                                                                parmsspecific={"normalize": [True]},
                                                                                 targetfield=target)
     print(f"score: {scoremedian}, len={len(allscores)}")
     print(allscores)
@@ -430,8 +430,8 @@ def PertimeseriesBest_vs_Dyn():
 
 
 if __name__ == "__main__" :
-    #constantKR_against_Dyn()
-    PertimeseriesBest_vs_Dyn()
+    constantKR_against_Dyn()
+    #PertimeseriesBest_vs_Dyn(extra="_half")
 
 
 

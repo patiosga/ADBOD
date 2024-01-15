@@ -112,22 +112,22 @@ def testYahoo(slide=100, window=200,slidingWindow=None,features=False,normalize=
 
 def run_all_for_dataset(window,slide,dataset):
 
-    # no features no normalize
-    #testYahoo(slide=slide, window=window, slidingWindow=2, features=False, normalize=False, dataset=dataset)
-    #testYahoo(slide=slide, window=window, slidingWindow=None, features=False, normalize=False,dataset=dataset)
-    #testYahoo(slide=slide, window=window, slidingWindow=10, features=False, normalize=False,dataset=dataset)
-
-    # no features  normalize
-    testYahoo(slide=slide, window=window, slidingWindow=2, features=False, normalize=True, dataset=dataset)
-    testYahoo(slide=slide, window=window, slidingWindow=None, features=False, normalize=True,dataset=dataset)
-    testYahoo(slide=slide, window=window, slidingWindow=10, features=False, normalize=True,dataset=dataset)
-
-    # features
-    #testYahoo(slide=slide, window=window, slidingWindow=None, features=True, normalize=True,dataset=dataset)
-    #testYahoo(slide=slide, window=window, slidingWindow=10, features=True, normalize=True,dataset=dataset)
-
-    #feature no normalize
-    testYahoo(slide=slide, window=window, slidingWindow=None, features=True, normalize=False, dataset=dataset)
+    # # no features no normalize
+    # #testYahoo(slide=slide, window=window, slidingWindow=2, features=False, normalize=False, dataset=dataset)
+    # #testYahoo(slide=slide, window=window, slidingWindow=None, features=False, normalize=False,dataset=dataset)
+    # #testYahoo(slide=slide, window=window, slidingWindow=10, features=False, normalize=False,dataset=dataset)
+    #
+    # # no features  normalize
+    # testYahoo(slide=slide, window=window, slidingWindow=2, features=False, normalize=True, dataset=dataset)
+    # testYahoo(slide=slide, window=window, slidingWindow=None, features=False, normalize=True,dataset=dataset)
+    # testYahoo(slide=slide, window=window, slidingWindow=10, features=False, normalize=True,dataset=dataset)
+    #
+    # # features
+    # #testYahoo(slide=slide, window=window, slidingWindow=None, features=True, normalize=True,dataset=dataset)
+    # #testYahoo(slide=slide, window=window, slidingWindow=10, features=True, normalize=True,dataset=dataset)
+    #
+    # #feature no normalize
+    # testYahoo(slide=slide, window=window, slidingWindow=None, features=True, normalize=False, dataset=dataset)
     testYahoo(slide=slide, window=window, slidingWindow=10, features=True, normalize=False,dataset=dataset)
 
 
