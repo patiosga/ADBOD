@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import sklearn.metrics
 from prts import ts_recall, ts_precision
-
+import os
 from TSB_UAD_code.feature import Window
 from Techniques import distanceKR, dynamic
 from TSB_UAD_code.slidingWindows import find_length
@@ -34,7 +34,7 @@ class experiment:
 
         self.X_data = Window(window = self.slidingWindow).convert(self.data).to_numpy()
         if features:
-            self.X_data = self.gfeaturedfunormalize(self.X_data)
+            self.X_data = self.gfeaturedfunormalize(self.X_data,self.name,slidingWindow)
         if normalize==True:
             self.X_data=(self.X_data-self.X_data.min())/(self.X_data.max()-self.X_data.min())
         # make labels like Thodoris
@@ -78,20 +78,36 @@ class experiment:
         else:
             f1_score = 2 * (precision * recall) / (precision + recall)
             return f1_score
-    def gfeaturedfunormalize(self,dfvalues):
-        colnames = ["max","min","median", "PtP", "Var", "std", "RMS", "skewness", "kurtosis"]
-        values = dfvalues
-        alldata = []
-        for row in values:
-            features = []
-            features.append(tsfel.feature_extraction.features.calc_median(row))
-            features.append(tsfel.feature_extraction.features.pk_pk_distance(row))
-            features.append(tsfel.feature_extraction.features.calc_var(row))
-            features.append(tsfel.feature_extraction.features.skewness(row))
-            alldata.append(features)
-        dfnew = pd.DataFrame(alldata)
-        return dfnew.values
+    def gfeaturedfunormalize(self,dfvalues,name,lentgth):
+        folder_path="./data/YAHOO/features/"
+        try:
+            if not os.path.exists(folder_path):
+                # If not, create it
+                os.makedirs(folder_path)
+                print(f"Folder '{folder_path}' created.")
+            fname=name.split(".")[0]+f"s{lentgth}."+name.split(".")[1]
+            file_path = os.path.join(folder_path, fname)
 
+            if os.path.exists(file_path):
+                df=pd.read_csv(file_path, header=None)
+                return df.values
+            else:
+                colnames = ["max","min","median", "PtP", "Var", "std", "RMS", "skewness", "kurtosis"]
+                values = dfvalues
+                alldata = []
+                for row in values:
+                    features = []
+                    features.append(tsfel.feature_extraction.features.calc_median(row))
+                    features.append(tsfel.feature_extraction.features.pk_pk_distance(row))
+                    features.append(tsfel.feature_extraction.features.calc_var(row))
+                    features.append(tsfel.feature_extraction.features.skewness(row))
+                    alldata.append(features)
+                dfnew = pd.DataFrame(alldata)
+                dfnew.to_csv(file_path,index=False,header=False)
+                return dfnew.values
+        except Exception as e:
+            print(e)
+            exit(-1)
 
     def runstatic(self,slide=100,window=200):
         modelName='staticKR'

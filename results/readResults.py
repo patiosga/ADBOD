@@ -2,8 +2,75 @@ import math
 import statistics
 
 import pandas as pd
-from autorank import autorank, plot_stats, create_report
 
+def get_best_with_for_each_combination(dfd,parmsspecific={"normalize": [False]},targetfield="f1Ex+Rpr"):
+    alldatasets = dfd["dataset"].unique()
+    for paramm in parmsspecific.keys():
+        dfd = dfd[dfd[paramm].isin(parmsspecific[paramm])]
+
+    # method,k,r,window,shift,initSubseq,ActSubSeq,Existence,Rrecall,Rprecision,f1Ex+Rpr,f1R+R,features,dataset
+    # combinations = k,r,window,shift,initSubseq,features
+    Parametercolumns = ["window", "shift", "initSubseq", "features", "normalize"]
+    ParamValues = []
+    combinations = []
+
+    for param in Parametercolumns:
+        if param in parmsspecific.keys():
+            ParamValues.append(parmsspecific[param])
+        else:
+            ParamValues.append([vl for vl in dfd[param].unique()])
+
+    for window in ParamValues[0]:
+        for initSubseq in ParamValues[2]:
+            for features in ParamValues[3]:
+                for normalize in ParamValues[4]:
+                    combinations.append(
+                        {"window": window, "shift": window // 2, "initSubseq": initSubseq,
+                         "features": features, "normalize": normalize})
+    print(f"combinations: {len(combinations)}")
+    # for each combination calculate median ?
+    score_per_combination = []
+    datasetsallreturn = []
+
+    params = []
+    for comb in combinations:
+        params.append((dfd, comb, alldatasets, targetfield))
+
+    returnList = pool.map(evaluate_combination_best_kr, params)
+
+    for enum, tupp in enumerate(returnList):
+        if len(tupp[1])==0:
+            score_per_combination.append(0)
+            datasetsallreturn.append([])
+            continue
+        score_per_combination.append(statistics.median(tupp[0]))
+        datasetsallreturn.append(tupp[1])
+    
+    return score_per_combination,combinations
+
+
+def All_combinations_Optimal_K_and_R(target="f1Ex+Rpr", extra="_half", parmsspecific={}):
+    dfdyn = pd.read_csv(f"results{extra}.csv", header=0)
+    dfstatic = pd.read_csv(f"resultsKR{extra}.csv", header=0)
+
+    dfdyn["initSubseq"] = dfdyn["initSubseq"].fillna(value=-1)
+
+    dfstatic["initSubseq"] = dfstatic["initSubseq"].fillna(value=-1)
+
+    print("##########################################################################################333")
+    dynmedians, combinations = get_best_with_for_each_combination(dfdyn,
+                                                                                parmsspecific=parmsspecific,
+                                                                                targetfield=target)
+
+
+    statmedians,combinationsstat = get_best_with_for_each_combination(dfstatic,
+                                                                                   parmsspecific=parmsspecific,
+                                                                                   targetfield=target)
+
+    
+    for comb,stmed in zip(combinationsstat,statmedians):
+        pos=combinations.index(comb)
+        print(f"stat:{stmed} - dyn:{dynmedians[pos]}")
 
 def get_best_on_all_datasets(dfd,parmsspecific={},targetfield="f1Ex+Rpr"):
 
@@ -237,7 +304,7 @@ def plotgraph(static,staticnames, dyn,dynNames,target):
     plt.ylim([-0.05, 1.1])
     plt.show()
 
-def constantKR_against_Dyn(extra="_half"):
+def constantKR_against_Dyn(extra="_half",parmsspecific={}, target = "f1Ex+Rpr"):
     dfdyn = pd.read_csv(f"results{extra}.csv", header=0)
     dfstatic = pd.read_csv(f"resultsKR{extra}.csv", header=0)
 
@@ -252,8 +319,8 @@ def constantKR_against_Dyn(extra="_half"):
     # Yahoo_A2synthetic_
     # print(get_best_on_dataset(dfdyn,"Yahoo_A2synthetic_",parmsspecific={},targetfield="f1Ex+Rpr"))
 
-    target = "f1Ex+Rpr"
-    # target="f1R+R"
+   
+    # 
     # ["k","r","window","shift","initSubseq","features","normalize"]
     # combination,scoremedian,allscores=get_best_on_dataset(dfdyn,"Yahoo_A2synthetic_",parmsspecific={"features":[False],"normalize":[True]},targetfield=target)
     # print(f"score: {scoremedian}, len={len(allscores)}")
@@ -267,7 +334,7 @@ def constantKR_against_Dyn(extra="_half"):
     ######################################33
     print("##########################################################################################333")
     alldatasets, combination, scoremedian, allscores = get_best_on_all_datasets(dfdyn,
-                                                                                parmsspecific={"normalize": [True]},
+                                                                                parmsspecific=parmsspecific,
                                                                                 targetfield=target)
     print(f"score: {scoremedian}, len={len(allscores)}")
     print(allscores)
@@ -280,7 +347,7 @@ def constantKR_against_Dyn(extra="_half"):
             dynscore.append(s)
 
     alldatasets, combination, scoremedian, allscores = get_best_on_all_datasets(dfstatic,
-                                                                                parmsspecific={"normalize": [True]},
+                                                                                parmsspecific=parmsspecific,
                                                                                 targetfield=target)
     print(f"score: {scoremedian}, len={len(allscores)}")
     print(allscores)
@@ -339,6 +406,10 @@ def get_best_with_different_k_R(dfd,parmsspecific={"normalize": [False]},targetf
     returnList = pool.map(evaluate_combination_best_kr, params)
 
     for enum, tupp in enumerate(returnList):
+        if len(tupp[1])==0:
+            score_per_combination.append(0)
+            datasetsallreturn.append([])
+            continue
         score_per_combination.append(statistics.median(tupp[0]))
         datasetsallreturn.append(tupp[1])
 
@@ -375,7 +446,7 @@ def evaluate_combination_best_kr(paramset):
     #(dfd["dataset"] == datasettemp)
 
     if len(f1temp)==0:
-        return []
+        return [0,[]]
     if abs(len(f1temp)-len(alldatasets))>10:
         print(f"{comb} -> {len(f1temp)} != {len(alldatasets)}")
         f1temp=[0 for kati in f1temp]
@@ -384,7 +455,7 @@ def evaluate_combination_best_kr(paramset):
     return (f1list,toreturndatasets)
 
 
-def PertimeseriesBest_vs_Dyn(extra="_half"):
+def PertimeseriesBest_vs_Dyn(target = "f1Ex+Rpr",extra="_half",parmsspecific={}):
     dfdyn = pd.read_csv(f"results{extra}.csv", header=0)
     dfstatic = pd.read_csv(f"resultsKR{extra}.csv", header=0)
 
@@ -392,12 +463,12 @@ def PertimeseriesBest_vs_Dyn(extra="_half"):
 
     dfstatic["initSubseq"] = dfstatic["initSubseq"].fillna(value=-1)
 
-    target = "f1Ex+Rpr"
-    #target="f1R+R"
+    
+   
 
     print("##########################################################################################333")
     alldatasets, combination, scoremedian, allscores = get_best_on_all_datasets(dfdyn,
-                                                                                parmsspecific={"normalize": [True]},
+                                                                                parmsspecific=parmsspecific,
                                                                                 targetfield=target)
     print(f"score: {scoremedian}, len={len(allscores)}")
     print(allscores)
@@ -410,7 +481,7 @@ def PertimeseriesBest_vs_Dyn(extra="_half"):
             dynscore.append(s)
 
     alldatasets, combination, scoremedian, allscores = get_best_with_different_k_R(dfstatic,
-                                                                                parmsspecific={"normalize": [True]},
+                                                                                parmsspecific=parmsspecific,
                                                                                 targetfield=target)
     print(f"score: {scoremedian}, len={len(allscores)}")
     print(allscores)
@@ -430,8 +501,10 @@ def PertimeseriesBest_vs_Dyn(extra="_half"):
 
 
 if __name__ == "__main__" :
-    constantKR_against_Dyn()
-    #PertimeseriesBest_vs_Dyn(extra="_half")
-
+    #constantKR_against_Dyn(target="f1R+R",extra="_final",parmsspecific={"normalize": [False]})#,"initSubseq":[-1,10.0]})
+    #PertimeseriesBest_vs_Dyn(target="f1R+R",extra="_final",parmsspecific={"normalize": [False]})#,"initSubseq":[-1,10.0]})
+    All_combinations_Optimal_K_and_R(target="f1Ex+Rpr",extra="_final",parmsspecific={})#{"normalize": [False]})
+    # target="f1Ex+Rpr"
+    # target="f1R+R"
 
 

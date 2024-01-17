@@ -44,7 +44,7 @@ def check_many_kt(slide=100, window=200,slidingWindow=None,features=False,normal
             krparams.append((k,r))
 
     from multiprocessing.dummy import Pool as ThreadPool
-    pool = ThreadPool(4)
+    pool = ThreadPool(3)
 
     for qq in tqdm(range(len(krparams))):
         k=krparams[qq][0]
@@ -118,17 +118,20 @@ def run_all_for_dataset(window,slide,dataset):
     # #testYahoo(slide=slide, window=window, slidingWindow=10, features=False, normalize=False,dataset=dataset)
     #
     # # no features  normalize
-    # testYahoo(slide=slide, window=window, slidingWindow=2, features=False, normalize=True, dataset=dataset)
-    # testYahoo(slide=slide, window=window, slidingWindow=None, features=False, normalize=True,dataset=dataset)
-    # testYahoo(slide=slide, window=window, slidingWindow=10, features=False, normalize=True,dataset=dataset)
+    testYahoo(slide=slide, window=window, slidingWindow=2, features=False, normalize=True, dataset=dataset)
+    testYahoo(slide=slide, window=window, slidingWindow=None, features=False, normalize=True,dataset=dataset)
+    testYahoo(slide=slide, window=window, slidingWindow=10, features=False, normalize=True,dataset=dataset)
     #
     # # features
     # #testYahoo(slide=slide, window=window, slidingWindow=None, features=True, normalize=True,dataset=dataset)
     # #testYahoo(slide=slide, window=window, slidingWindow=10, features=True, normalize=True,dataset=dataset)
     #
     # #feature no normalize
-    # testYahoo(slide=slide, window=window, slidingWindow=None, features=True, normalize=False, dataset=dataset)
-    testYahoo(slide=slide, window=window, slidingWindow=10, features=True, normalize=False,dataset=dataset)
+    #testYahoo(slide=slide, window=window, slidingWindow=None, features=True, normalize=False, dataset=dataset)
+    #testYahoo(slide=slide, window=window, slidingWindow=10, features=True, normalize=False,dataset=dataset)
+
+
+
 
 
 LOGRESULTS=True
@@ -137,11 +140,12 @@ if __name__ == "__main__" :
 
 
     ######## For multiple combinations ###################################3
-    run_all_for_dataset(200, 100, "./data/YAHOO/Yahoo_A1real_")
-    run_all_for_dataset(200, 100, "./data/YAHOO/Yahoo_A2synthetic_")
-    run_all_for_dataset(200, 100, "./data/YAHOO/YahooA3Benchmark-TS")
-    run_all_for_dataset(200, 100, "./data/YAHOO/YahooA4Benchmark-TS")
+    #run_all_for_dataset(200, 100, "./data/YAHOO/Yahoo_A1real_")
+    #run_all_for_dataset(200, 100, "./data/YAHOO/Yahoo_A2synthetic_")
+    #run_all_for_dataset(200, 100, "./data/YAHOO/YahooA3Benchmark-TS")
+    #run_all_for_dataset(200, 100, "./data/YAHOO/YahooA4Benchmark-TS")
 
+    testYahoo(slide=100, window=200, slidingWindow=10, features=True, normalize=False, dataset="./data/YAHOO/Yahoo_A2synthetic_")
 
     #### FOR a single combination ####################################3
     # testYahoo(slide=200, window=400, slidingWindow=10,features=True,normalize=False,dataset="./data/YAHOO/Yahoo_A1synthetic_")
