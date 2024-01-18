@@ -249,31 +249,32 @@ def plotgraph(static,staticnames, dyn,dynNames,target):
     # create_report(results)
     # plot_stats(results)
     # plt.show()
-    plt.subplot(221)
+    plt.subplot(131)
     plt.gca().set_title(f"({atag})")
     boxes=plt.boxplot([fdyn1,fstatic1,fdyn2,fstatic2,fdyn3,fstatic3,fdyn4,fstatic4],
                          vert=True,  # vertical box alignment
                          patch_artist=True,  # fill with color
-                         labels=["Dyn(A1)","DOD(A1)","Dyn(A2)","DOD(A2)","Dyn(A3)","DOD(A3)","Dyn(A4)","DOD(A4)"])  # will be used to label x-ticks
+                         medianprops={"color":"black"},
+                         labels=["Dyn\n(A1)","DOD\n(A1)","Dyn\n(A2)","DOD\n(A2)","Dyn\n(A3)","DOD\n(A3)","Dyn\n(A4)","DOD\n(A4)"])  # will be used to label x-ticks
 
     for i,box in enumerate(boxes['boxes']):
         # change outline color
         if i%2==0:
             box.set(color='black')
             # change fill color
-            box.set(facecolor='blue')
+            box.set(facecolor='cyan')
             # change hatch
-            box.set(hatch='/')
         else:
             box.set(color='black')
             # change fill color
             box.set(facecolor='green')
     plt.ylabel(f"AD{level} F1")
-    plt.subplot(223)
+    plt.subplot(132)
     plt.gca().set_title(f"({btag})")
     boxes=plt.boxplot([fdyn,fstatic],
                 vert=True,  # vertical box alignment
                 patch_artist=True,  # fill with color
+                medianprops={"color":"black"},
                 labels=["Dyn(All)", "DOD(All)"])
 
     for i,box in enumerate(boxes['boxes']):
@@ -281,15 +282,14 @@ def plotgraph(static,staticnames, dyn,dynNames,target):
         if i%2==0:
             box.set(color='black')
             # change fill color
-            box.set(facecolor='blue')
+            box.set(facecolor='cyan')
             # change hatch
-            box.set(hatch='/')
         else:
             box.set(color='black')
             # change fill color
             box.set(facecolor='green')
     plt.ylabel(f"AD{level} F1")
-    plt.subplot(122)
+    plt.subplot(133)
     plt.gca().set_title(f"({ctag})")
     plt.scatter(fstatic1, fdyn1,marker="*",color="orange")
     plt.scatter(fstatic2, fdyn2,marker="s",color="blue")
@@ -501,10 +501,11 @@ def PertimeseriesBest_vs_Dyn(target = "f1Ex+Rpr",extra="_half",parmsspecific={})
 
 
 if __name__ == "__main__" :
-    #constantKR_against_Dyn(target="f1R+R",extra="_final",parmsspecific={"normalize": [False]})#,"initSubseq":[-1,10.0]})
-    #PertimeseriesBest_vs_Dyn(target="f1R+R",extra="_final",parmsspecific={"normalize": [False]})#,"initSubseq":[-1,10.0]})
-    All_combinations_Optimal_K_and_R(target="f1Ex+Rpr",extra="_final",parmsspecific={})#{"normalize": [False]})
+    #constantKR_against_Dyn(target="f1Ex+Rpr",extra="_final",parmsspecific={"normalize": [False]})#,"initSubseq":[-1,10.0]})
+    PertimeseriesBest_vs_Dyn(target="f1R+R",extra="_final",parmsspecific={"normalize": [False]})#,"initSubseq":[-1,10.0]})
+    #All_combinations_Optimal_K_and_R(target="f1Ex+Rpr",extra="_final",parmsspecific={})#{"normalize": [False]})
     # target="f1Ex+Rpr"
     # target="f1R+R"
-
+    
+    
 

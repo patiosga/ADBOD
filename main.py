@@ -9,6 +9,28 @@ from ExperimentTSB import experiment
 fstatic =open("./results/resultsKR.csv", "a+")
 fdyn =open("./results/results.csv", "a+")
 
+
+def rumsingleexpkr_NOLOG(parms):
+    #(k,r,window,slide,slidingWindow,features,normalize,i,dataset)
+    k = parms[0]
+    r = parms[1]
+    window = parms[2]
+    slide=parms[3]
+    slidingWindow=parms[4]
+    features=parms[5]
+    normalize=parms[6]
+    i = parms[7]
+    dataset = parms[8]
+
+    try:
+        datasetname = f'{dataset}{i}_data.out'
+        exp = experiment(slide=slide, window=window, k=k, r=r, filepath=datasetname, slidingWindow=slidingWindow,
+                         onlystatic=True, features=features, normalize=normalize)
+    except Exception as e:
+        #print(e)
+        return None
+
+
 def rumsingleexpkr(parms):
     #(k,r,window,slide,slidingWindow,features,normalize,i,dataset)
     k = parms[0]
@@ -131,7 +153,14 @@ def run_all_for_dataset(window,slide,dataset):
     #testYahoo(slide=slide, window=window, slidingWindow=10, features=True, normalize=False,dataset=dataset)
 
 
-
+import time
+def timecalculation(k=40, r=0.3, window=200, slide=100, slidingWindow=10, features=False, normalize=False):
+    
+    now=time.time()
+    for dataset in datasets:
+        for i in range(100):
+            params.append((k, r, window, slide, slidingWindow, features, normalize, i, dataset))
+            rumsingleexpkr_NOLOG(parms)
 
 
 LOGRESULTS=True
@@ -187,3 +216,8 @@ if __name__ == "__main__" :
 
 # 0.14 - 0.06 στο προτεινωμενο
 # 0.17 - 0.19 στο 1
+
+
+
+
+
