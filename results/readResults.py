@@ -502,8 +502,8 @@ def PertimeseriesBest_vs_Dyn(target = "f1Ex+Rpr",extra="_half",parmsspecific={})
 
 if __name__ == "__main__" :
     #constantKR_against_Dyn(target="f1Ex+Rpr",extra="_final",parmsspecific={"normalize": [False]})#,"initSubseq":[-1,10.0]})
-    PertimeseriesBest_vs_Dyn(target="f1R+R",extra="_final",parmsspecific={"normalize": [False]})#,"initSubseq":[-1,10.0]})
-    #All_combinations_Optimal_K_and_R(target="f1Ex+Rpr",extra="_final",parmsspecific={})#{"normalize": [False]})
+    #PertimeseriesBest_vs_Dyn(target="f1R+R",extra="_final",parmsspecific={"normalize": [False]})#,"initSubseq":[-1,10.0]})
+    All_combinations_Optimal_K_and_R(target="f1Ex+Rpr",extra="_final",parmsspecific={})#{"normalize": [False]})
     # target="f1Ex+Rpr"
     # target="f1R+R"
     

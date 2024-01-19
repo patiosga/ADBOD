@@ -26,8 +26,7 @@ class static_kr():
             if d < 0 or self.R < 0:
                 score.append(0)
             elif d > self.R:
-                score.append((d - self.R) / d)
-                #score.append(1)
+                score.append(1)
             else:
                 score.append(0)
         return score

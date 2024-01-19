@@ -32,7 +32,6 @@ class dynamic_kr():
         D = np.take_along_axis(np.array(dists), I, axis=1)
         return D, I
 
-    # self.curr_k, r, res =self._dynamic_rk(self.window_index, pts)
     def _dynamic_rk(self, query : pd.DataFrame, pts: pd.DataFrame):
         ks = [k for k in self.k if k < pts.shape[0] - 1]
 
@@ -59,32 +58,19 @@ class dynamic_kr():
                 if r <0:
                     continue
                 if n_outliers == 0:
-                    #self.logger.debug(f"{k=}, {r=:.2f}: No outliers")
                     break
 
                 minoutlier = min(kdists[kdists > r]) * (kdistmax - kdistmin) + kdistmin
                 maxinlier = max(kdists[kdists <= r]) * (kdistmax - kdistmin) + kdistmin
                 if len(inliers_dists) <= 1:
-                    #self.logger.debug(f"{k=}, {r=:.2f}: Inliers less than 1")
+
                     continue
 
                 dmean = m - inliers_dists.mean()
                 dstd = s - inliers_dists.std()
                 res = (dmean / m + dstd / s) / ((n_outliers))
-                #res = (dmean / m + dstd / s) / n_outliers**2
-                #self.logger.debug(f"{k=}, {r=:.2f}: {res=:.2f}, {n_outliers=}")
 
                 if res > max_res:
-                    # print(k)
-                    # print(res)
-                    # plt.plot(kdists)
-                    # plt.axhline(r,color="red")
-                    # plt.axhline(m,color="blue")
-                    # plt.axhline(inliers_dists.mean(),color="green")
-                    #
-                    # plt.axhline(s, color="magenta")
-                    # plt.axhline(inliers_dists.std(), color="pink")
-                    # plt.show()
                     max_res, k_sel, r_sel = res, k, (minoutlier+maxinlier)/2
 
         return k_sel, r_sel, max_res
@@ -103,7 +89,8 @@ class dynamic_kr():
             if d<0 or r<0:
                 score.append(0)
             elif d>r and (d-r)/d>0.05:
-                score.append((d-r)/d)
+                #score.append((d-r)/d)
+                score.append(1)
             else:
                 score.append(0)
         return score

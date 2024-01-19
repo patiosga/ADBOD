@@ -1,3 +1,5 @@
+import time
+
 import numpy as np
 import math
 import matplotlib.pyplot as plt
@@ -116,7 +118,11 @@ class experiment:
         #clf = dynamic.dynamic_kr(slide=100,window=200,window_norm=False,policy="or")
 
         x = self.X_data
+        starttime=time.time()
         score= clf.fit(x)
+        endtime=time.time()
+        self.statictime=endtime-starttime
+
         scoreinit=score
         # Post processing
         score = MinMaxScaler(feature_range=(0,1)).fit_transform(score.reshape(-1,1)).ravel()
@@ -154,7 +160,10 @@ class experiment:
         clf = dynamic.dynamic_kr(slide=slide, window=window, window_norm=False, policy="or")
 
         x = self.X_data
-        score= clf.fit(x)
+        starttime = time.time()
+        score = clf.fit(x)
+        endtime = time.time()
+        self.dyntime = endtime - starttime
         if self.debug:
             plt.plot(score,label="dyn")
         # Post processing
