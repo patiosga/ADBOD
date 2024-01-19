@@ -8,7 +8,7 @@ Dyn method calculates best k and R parameter in each window, based on objective 
 
 
 
-# Usage
+# Usage (main.py)
 
 ```python
 X_data, label=data_and_labels(sequence_len=10,dataset="./data/YAHOO/Yahoo_A1real_53_data.out")
