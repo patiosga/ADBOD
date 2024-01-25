@@ -31,10 +31,10 @@ Output:
 
 `ExperimentTSB.py`: a helper class to conduct experiments using the two algorithms.
 `RunExperiments.py`: Tesing multiple hyper-parameters for DOD and Dyn and store the results under `resulst` Folder (`results_final.csv` file for Dyn and `resultsKR_final.csv` for DOD).
-`\results\readResults.py`: Used to search results from DOD and Dyn experiment, and to produce plot with summarized results.
+`/results/readResults.py`: Used to search results from DOD and Dyn experiment, and to produce plot with summarized results.
 
-`data\` : data used for the evaluation
-`Techniques\` : Implementation of Dyn and DOD
+`data/` : data used for the evaluation
+`Techniques/` : Implementation of Dyn and DOD
 
 
 
@@ -45,7 +45,7 @@ Output:
 
 ### TSB-UAD usage: 
 
-We use Window functionality to transform uni-variate to multivariate data using sub-sequences, using TSB implementation under the foldt `TSB_UAD_code\`.
+We use Window functionality to transform uni-variate to multivariate data using sub-sequences, using TSB implementation under the foldt `TSB_UAD_code/`.
 
 Reference:
 
