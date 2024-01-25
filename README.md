@@ -1,5 +1,6 @@
+# Parameter-free Streaming Distance-based \\Outlier Detection
 
-# Automatic  Distance Based Outlier Detection
+### Automatic  Distance Based Outlier Detection
 
 Implementation of Distance Based outlier detection (DOD) baseline and dynamic K and R alternative (Dyn).
 
