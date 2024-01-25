@@ -1,4 +1,4 @@
-# Parameter-free Streaming Distance-based \\Outlier Detection
+# Parameter-free Streaming Distance-based Outlier Detection
 
 ### Automatic  Distance Based Outlier Detection
 
