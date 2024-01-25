@@ -251,6 +251,14 @@ def plotgraph(static,staticnames, dyn,dynNames,target):
     # plt.show()
     plt.subplot(131)
     plt.gca().set_title(f"({atag})")
+
+    print(f"AD{level} F1")
+    print(f"1:{statistics.median(fdyn1)} - {statistics.median(fstatic1)} dif= {statistics.median(fdyn1)-statistics.median(fstatic1)}")
+    print(f"2:{statistics.median(fdyn2)} - {statistics.median(fstatic2)} dif= {statistics.median(fdyn2)-statistics.median(fstatic2)}")
+    print(f"3:{statistics.median(fdyn3)} - {statistics.median(fstatic3)} dif= {statistics.median(fdyn3)-statistics.median(fstatic3)}")
+    print(f"4:{statistics.median(fdyn4)} - {statistics.median(fstatic4)} dif= {statistics.median(fdyn4)-statistics.median(fstatic4)}")
+    print(f"All:{statistics.median(fdyn)} - {statistics.median(fstatic)} dif= {statistics.median(fdyn)-statistics.median(fstatic)}")
+
     boxes=plt.boxplot([fdyn1,fstatic1,fdyn2,fstatic2,fdyn3,fstatic3,fdyn4,fstatic4],
                          vert=True,  # vertical box alignment
                          patch_artist=True,  # fill with color
@@ -501,8 +509,9 @@ def PertimeseriesBest_vs_Dyn(target = "f1Ex+Rpr",extra="_half",parmsspecific={})
 
 
 if __name__ == "__main__" :
-    #constantKR_against_Dyn(target="f1Ex+Rpr",extra="_final",parmsspecific={"normalize": [False]})#,"initSubseq":[-1,10.0]})
+    #constantKR_against_Dyn(target="f1R+R",extra="_final",parmsspecific={"normalize": [False]})#,"initSubseq":[-1,10.0]})
     #PertimeseriesBest_vs_Dyn(target="f1R+R",extra="_final",parmsspecific={"normalize": [False]})#,"initSubseq":[-1,10.0]})
+    #f1R+R
     All_combinations_Optimal_K_and_R(target="f1Ex+Rpr",extra="_final",parmsspecific={})#{"normalize": [False]})
     # target="f1Ex+Rpr"
     # target="f1R+R"

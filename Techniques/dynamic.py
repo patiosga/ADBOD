@@ -10,9 +10,11 @@ import pandas as pd
 class dynamic_kr():
 
     def __init__(self,window_norm=False,slide=100,window=200,policy="or"):
+        #self.z = list(d / 2 for d in range(4, 10))
         self.z = list(d / 2 for d in range(4, 20))
         self.metric= "euclidean"
         self.k=[5,6,7,8,9,10,13,17,21,30,40]
+        #self.k = [5,8, 13, 21, 30, 40]
         self.window_norm=window_norm
         self.slide=slide
         self.window=window

@@ -10,8 +10,6 @@ fstatic =open("./results/resultsKR.csv", "a+")
 fdyn =open("./results/results.csv", "a+")
 
 
-
-
 def rumsingleexpkr(parms):
     #(k,r,window,slide,slidingWindow,features,normalize,i,dataset)
     k = parms[0]
@@ -155,15 +153,34 @@ def timecalculation(k=40, r=0.3, window=200, slide=100, slidingWindow=10, featur
     ftime=open("./results/times.txt", "a+")
     ftime.write(f"{window},{slide},{k},{r},{slidingWindow},{features},{normalize},{totalstatic},{totaldyn}\n")
 LOGRESULTS=True
-if __name__ == "__main__" :
 
+def rundynall():
+    for dataset in ["./data/YAHOO/Yahoo_A1real_", "./data/YAHOO/Yahoo_A2synthetic_", "./data/YAHOO/YahooA4Benchmark-TS",
+                    "./data/YAHOO/YahooA3Benchmark-TS"]:
+        for window in [200, 400]:
+            for slidingWindow in [2, 10, None]:
+                for normalize in [False, True]:
+                    onerun(slide=window // 2, window=window, slidingWindow=slidingWindow, keepmax=(40, 1), features=False,
+                           normalize=normalize, dataset=dataset)
+                    print("ok")
+    for dataset in ["./data/YAHOO/Yahoo_A1real_", "./data/YAHOO/Yahoo_A2synthetic_", "./data/YAHOO/YahooA4Benchmark-TS",
+                    "./data/YAHOO/YahooA3Benchmark-TS"]:
+        for window in [200, 400]:
+            for slidingWindow in [10, None]:
+                for normalize in [False, True]:
+                    onerun(slide=window // 2, window=window, slidingWindow=slidingWindow, keepmax=(40, 1), features=True,
+                           normalize=normalize, dataset=dataset)
+                    print("ok")
+
+if __name__ == "__main__" :
+    #rundynall()
     #### TEST time ####
     # timecalculation(k=40, r=0.3, window=200, slide=100, slidingWindow=2, features=False, normalize=False)
     # timecalculation(k=40, r=0.3, window=200, slide=100, slidingWindow=10, features=False, normalize=False)
     # timecalculation(k=40, r=0.3, window=200, slide=100, slidingWindow=50, features=False, normalize=False)
     # timecalculation(k=40, r=0.3, window=200, slide=100, slidingWindow=100, features=False, normalize=False)
 
-    timecalculation(k=40, r=0.3, window=100, slide=50, slidingWindow=50, features=False, normalize=False)
+    #timecalculation(k=40, r=0.3, window=100, slide=50, slidingWindow=50, features=False, normalize=False)
     # timecalculation(k=40, r=0.3, window=400, slide=200, slidingWindow=10, features=False, normalize=False)
     # timecalculation(k=40, r=0.3, window=400, slide=200, slidingWindow=50, features=False, normalize=False)
     # timecalculation(k=40, r=0.3, window=400, slide=200, slidingWindow=100, features=False, normalize=False)
@@ -199,9 +216,12 @@ if __name__ == "__main__" :
     #onerun(slide=100, window=200,slidingWindow=10,keepmax=(40,1.0),debug=False,features=False,normalize=False,dataset="./data/YAHOO/Yahoo_A2synthetic_")
     #onerun(slide=100, window=200,slidingWindow=10,keepmax=(15,0.5),debug=False,features=False,normalize=False,dataset="./data/YAHOO/Yahoo_A2synthetic_")
 
+
+
+
     # A single Experiment for a single data file using Distance based and Dynamic technique:
-    #experiment(slide=slide, window=window, k=k, r=r, filepath=datasetname, slidingWindow=slidingWindow,
-    #           onlystatic=True, features=features, normalize=normalize)
+    experiment(slide=100, window=200,slidingWindow=10 ,k=40, r=0.5, filepath="./data/YAHOO/Yahoo_A2synthetic_40_data.out",
+               onlystatic=True, features=False, normalize=False)
 
 
 
