@@ -48,17 +48,13 @@ Output:
 
 We use Window functionality to transform uni-variate to multivariate data using sub-sequences, using TSB implementation under the foldt `TSB_UAD_code/`.
 
-Reference:
+## Reference:
 
 ```commandline
-@article{paparrizos2022tsb,
-  title={Tsb-uad: an end-to-end benchmark suite for univariate time-series anomaly detection},
-  author={Paparrizos, John and Kang, Yuhao and Boniol, Paul and Tsay, Ruey S and Palpanas, Themis and Franklin, Michael J},
-  journal={Proceedings of the VLDB Endowment},
-  volume={15},
-  number={8},
-  pages={1697--1711},
-  year={2022},
-  publisher={VLDB Endowment}
+@misc{giannoulidis2024parameter,
+  title={Parameter-free Streaming Distance-based Outlier Detection},
+  author={Giannoulidis, Apostolos and Nikolaidis, Nikodimos and Gounaris, Anastasios},
+  booktitle={MulTiSA 2024 in conjunction with ICDE 2024},
+  year={2024}
 }
 ```
