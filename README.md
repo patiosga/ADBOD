@@ -51,10 +51,14 @@ We use Window functionality to transform uni-variate to multivariate data using 
 ## Reference:
 
 ```commandline
-@misc{giannoulidis2024parameter,
-  title={Parameter-free Streaming Distance-based Outlier Detection},
+@INPROCEEDINGS{10555107,
   author={Giannoulidis, Apostolos and Nikolaidis, Nikodimos and Gounaris, Anastasios},
-  booktitle={MulTiSA 2024 in conjunction with ICDE 2024},
-  year={2024}
-}
+  booktitle={2024 IEEE 40th International Conference on Data Engineering Workshops (ICDEW)}, 
+  title={Parameter-free Streaming Distance-based Outlier Detection}, 
+  year={2024},
+  volume={},
+  number={},
+  pages={102-106},
+  keywords={Sensitivity;Conferences;Data engineering;Anomaly detection;Streams;distance-based outlier detection;data streams},
+  doi={10.1109/ICDEW61823.2024.00019}}
 ```
