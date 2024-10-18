@@ -7,7 +7,11 @@ Implementation of Distance Based outlier detection (DOD) baseline and dynamic K 
 Dyn method calculates best k and R parameter in each window, based on objective function:
 ![Dyn method](images/dynkr.png)
 
-
+## Install Enviroment
+```
+conda env create --file environment.yaml
+conda activate ADBOD
+```
 
 # Usage (main.py)
 
