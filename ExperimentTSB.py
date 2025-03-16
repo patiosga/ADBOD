@@ -63,7 +63,6 @@ class experiment:
             plt.show()
 
 
-
     def calculate_f1_score(self,precision, recall):
         """
         Calculate F1 score given precision and recall.
@@ -80,6 +79,8 @@ class experiment:
         else:
             f1_score = 2 * (precision * recall) / (precision + recall)
             return f1_score
+        
+
     def gfeaturedfunormalize(self,dfvalues,name,lentgth):
         folder_path="./data/YAHOO/features/"
         try:
@@ -111,6 +112,7 @@ class experiment:
             print(e)
             exit(-1)
 
+
     def runstatic(self,slide=100,window=200):
         modelName='staticKR'
         clf = distanceKR.static_kr(k=self.k, R=self.r, slide=slide, window=window, window_norm=False, policy="or")
@@ -127,10 +129,6 @@ class experiment:
         # Post processing
         score = MinMaxScaler(feature_range=(0,1)).fit_transform(score.reshape(-1,1)).ravel()
         score = np.array([score[0]]*math.ceil((self.slidingWindow-1)/2) + list(score) + [score[-1]]*((self.slidingWindow-1)//2))
-
-
-
-
 
         scoreAlarm = np.array([int(sc > 0) for sc in score])
         if len(set(scoreAlarm)) == 1:
@@ -155,6 +153,8 @@ class experiment:
 
 
         return f"static,{self.k},{self.r},{window},{slide},{self.initialslide},{self.slidingWindow},{recall},{recallrange},{precision},{self.staticf1},{f1RR},{self.features},{self.name},{self.normalize}\n"
+    
+    
     def rundyn(self,slide=100,window=200):
         modelName='dyn'
         clf = dynamic.dynamic_kr(slide=slide, window=window, window_norm=False, policy="or")
@@ -170,10 +170,9 @@ class experiment:
         score = MinMaxScaler(feature_range=(0,1)).fit_transform(score.reshape(-1,1)).ravel()
         score = np.array([score[0]]*math.ceil((self.slidingWindow-1)/2) + list(score) + [score[-1]]*((self.slidingWindow-1)//2))
 
+        scoreAlarm = np.array([int(sc>0) for sc in score])
 
-        scoreAlarm=np.array([int(sc>0) for sc in score])
-
-        f1 = sklearn.metrics.f1_score(self.label, scoreAlarm)
+        
         if len(set(scoreAlarm))==1:
             if scoreAlarm[0]==1:
                 recall=1

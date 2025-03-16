@@ -2,8 +2,10 @@ import statistics
 
 from tqdm import tqdm
 from ExperimentTSB import experiment
+import time
 
 
+LOGRESULTS=True  # ΑΠΑΡΑΔΕΚΤΟ ΤΟ ΟΤΙ ΑΥΤΟ ΟΡΙΖΟΤΑΝ ΣΕ ΜΙΑ ΤΥΧΑΙΑ ΓΡΑΜΜΗ ΚΟΝΤΑ ΣΤΗΝ 150 ΚΑΙ ΕΓΩ ΤΟ ΕΒΑΛΑ ΕΔΩ 
 
 
 fstatic =open("./results/resultsKR.csv", "a+")
@@ -34,7 +36,7 @@ def rumsingleexpkr(parms):
         return None
 
 
-# Run Distance based outlier detection for all data files in dataset
+# Run Distance based outlier detection for all data files in dataset  -----> STATIC KR!!
 # using given parameters, for multiple k and R parameters
 def check_many_kt(slide=100, window=200,slidingWindow=None,features=False,normalize=False,dataset="./data/YAHOO/Yahoo_A2synthetic_"):
     maxall=0
@@ -64,6 +66,7 @@ def check_many_kt(slide=100, window=200,slidingWindow=None,features=False,normal
     print(maxall)
     print(keepmax)
     return keepmax
+
 
 def onerun(slide=100, window=200,slidingWindow=None,keepmax=(10,0.5),debug=False,features=False,normalize=False,dataset="./data/YAHOO/Yahoo_A2synthetic_"):
     dynallf1 = []
@@ -95,8 +98,10 @@ def onerun(slide=100, window=200,slidingWindow=None,keepmax=(10,0.5),debug=False
     print(f" static mean: {sum(statallf1) / counter}")
     print(f" static median: {statistics.median(statallf1)}")
 
-    print(dynallf1)
-    print(statallf1)
+    # print(dynallf1)
+    # print(statallf1)
+    # Δικό μου το return για να παιρνω όλα τα f1 scores του dynamic μόνο
+    return dynallf1
 
 
 # Run technique to all data under the folder of given dataset using given parameters
@@ -132,11 +137,13 @@ def run_all_for_dataset(window,slide,dataset):
     #testYahoo(slide=slide, window=window, slidingWindow=10, features=True, normalize=False,dataset=dataset)
 
 
-import time
 def timecalculation(k=40, r=0.3, window=200, slide=100, slidingWindow=10, features=False, normalize=False):
     totalstatic=0
     totaldyn=0
-    for dataset in ["./data/YAHOO/Yahoo_A1real_","./data/YAHOO/Yahoo_A2synthetic_","./data/YAHOO/YahooA3Benchmark-TS","./data/YAHOO/YahooA4Benchmark-TS"]:
+
+    dataset_individual_times = [] # to track the time for each file in each dataset only for dynamic KR
+
+    for dataset in ["./data/YAHOO/Yahoo_A1real_", "./data/YAHOO/Yahoo_A2synthetic_","./data/YAHOO/YahooA3Benchmark-TS","./data/YAHOO/YahooA4Benchmark-TS"]: 
         for i in tqdm(range(100)):
             try:
 
@@ -146,13 +153,23 @@ def timecalculation(k=40, r=0.3, window=200, slide=100, slidingWindow=10, featur
 
                 totalstatic+=exp.statictime
                 totaldyn+=exp.dyntime
+
+                # My code to track the time for each file in each dataset  (!!!)
+                dataset_individual_times.append(exp.dyntime)
+
             except Exception as e:
                 continue
     print(f"dyn: {totaldyn} s")
     print(f"static: {totalstatic} s")
     ftime=open("./results/times.txt", "a+")
     ftime.write(f"{window},{slide},{k},{r},{slidingWindow},{features},{normalize},{totalstatic},{totaldyn}\n")
-LOGRESULTS=True
+
+    # ΔΙΚΟ ΜΟΥ RETURN
+    return totaldyn, dataset_individual_times
+
+
+
+
 
 def rundynall():
     for dataset in ["./data/YAHOO/Yahoo_A1real_", "./data/YAHOO/Yahoo_A2synthetic_", "./data/YAHOO/YahooA4Benchmark-TS",
@@ -173,9 +190,9 @@ def rundynall():
                     print("ok")
 
 if __name__ == "__main__" :
-    #rundynall()
+    # rundynall()
     #### TEST time ####
-    # timecalculation(k=40, r=0.3, window=200, slide=100, slidingWindow=2, features=False, normalize=False)
+    timecalculation(k=40, r=0.3, window=200, slide=100, slidingWindow=2, features=False, normalize=False)
     # timecalculation(k=40, r=0.3, window=200, slide=100, slidingWindow=10, features=False, normalize=False)
     # timecalculation(k=40, r=0.3, window=200, slide=100, slidingWindow=50, features=False, normalize=False)
     # timecalculation(k=40, r=0.3, window=200, slide=100, slidingWindow=100, features=False, normalize=False)
@@ -192,7 +209,7 @@ if __name__ == "__main__" :
     # timecalculation(k=5, r=0.3, window=200, slide=100, slidingWindow=10, features=False, normalize=False)
 
     ######## For multiple combinations ###################################3
-    #run_all_for_dataset(200, 100, "./data/YAHOO/Yahoo_A1real_")
+    # run_all_for_dataset(200, 100, "./data/YAHOO/Yahoo_A1real_")
     #run_all_for_dataset(200, 100, "./data/YAHOO/Yahoo_A2synthetic_")
     #run_all_for_dataset(200, 100, "./data/YAHOO/YahooA3Benchmark-TS")
     #run_all_for_dataset(200, 100, "./data/YAHOO/YahooA4Benchmark-TS")
@@ -212,7 +229,7 @@ if __name__ == "__main__" :
     #check_many_kt(slide=200, window=400, slidingWindow=10, features=True, normalize=True,dataset="./data/YAHOO/Yahoo_A1real_")
 
     ### FOR a single parametrization of DynamicKR and Distance based K-R on all data files in dataset:
-    #onerun(slide=100, window=200,slidingWindow=10,keepmax=(40,0.5),debug=False,features=False,normalize=False,dataset="./data/YAHOO/Yahoo_A2synthetic_")
+    # lista = onerun(slide=100, window=200,slidingWindow=10,keepmax=(40,0.5),debug=False,features=False,normalize=False,dataset="./data/YAHOO/Yahoo_A2synthetic_")
     #onerun(slide=100, window=200,slidingWindow=10,keepmax=(40,1.0),debug=False,features=False,normalize=False,dataset="./data/YAHOO/Yahoo_A2synthetic_")
     #onerun(slide=100, window=200,slidingWindow=10,keepmax=(15,0.5),debug=False,features=False,normalize=False,dataset="./data/YAHOO/Yahoo_A2synthetic_")
 
@@ -220,8 +237,8 @@ if __name__ == "__main__" :
 
 
     # A single Experiment for a single data file using Distance based and Dynamic technique:
-    experiment(slide=100, window=200,slidingWindow=10 ,k=40, r=0.5, filepath="./data/YAHOO/Yahoo_A2synthetic_40_data.out",
-               onlystatic=True, features=False, normalize=False)
+    # experiment(slide=100, window=200,slidingWindow=10 ,k=40, r=0.5, filepath="./data/YAHOO/Yahoo_A2synthetic_40_data.out",
+    #            onlystatic=True, features=False, normalize=False)
 
 
 

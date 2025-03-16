@@ -18,3 +18,10 @@ __pycache__/
 *.log
 *.log.*
 *.db
+
+# Testing folder
+Testing/
+
+images/
+
+*.csv

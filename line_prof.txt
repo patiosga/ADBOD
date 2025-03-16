@@ -1,0 +1,176 @@
+Timer unit: 1e-07 s
+
+Total time: 0.0001238 s
+File: c:\Users\giorg\OneDrive\Έγγραφα\Σχολή\Πτυχιακή\ADBOD\Techniques\dynamic.py
+Function: _calc_dist at line 30
+
+Line #      Hits         Time  Per Hit   % Time  Line Contents
+==============================================================
+    30                                               def _calc_dist(self,query : np.ndarray, pts: np.ndarray):
+    31         2       1238.0    619.0    100.0          return cdist(query, pts, metric=self.metric)
+
+Total time: 0.0007899 s
+File: c:\Users\giorg\OneDrive\Έγγραφα\Σχολή\Πτυχιακή\ADBOD\Techniques\dynamic.py
+Function: search at line 34
+
+Line #      Hits         Time  Per Hit   % Time  Line Contents
+==============================================================
+    34                                               def search(self,query: np.ndarray,points:np.ndarray, k: int):
+    35                                                   '''
+    36                                                   Ο πίνακας D είναι  W x W είναι οι αποστασεις του i σημείου/σειράς '''
+    37         2       1272.0    636.0     16.1          dists = self._calc_dist(query,points)
+    38
+    39         2          5.0      2.5      0.1          I = (
+    40                                                       np.argsort(dists, axis=1)
+    41         2       4044.0   2022.0     51.2              if k > 1
+    42                                                       else np.expand_dims(np.argmin(dists, axis=1), axis=1)
+    43                                                   )
+    44         2       2572.0   1286.0     32.6          D = np.take_along_axis(np.array(dists), I, axis=1)
+    45         2          6.0      3.0      0.1          return D, I
+
+Total time: 0.0043131 s
+File: c:\Users\giorg\OneDrive\Έγγραφα\Σχολή\Πτυχιακή\ADBOD\Techniques\dynamic.py
+Function: _dynamic_rk at line 48
+
+Line #      Hits         Time  Per Hit   % Time  Line Contents
+==============================================================
+    48                                               def _dynamic_rk(self, query : pd.DataFrame, pts: pd.DataFrame):
+    49         1         54.0     54.0      0.1          ks = [k for k in self.k if k < pts.shape[0] - 1]
+    50
+    51         1          4.0      4.0      0.0          if len(ks) == 0:
+    52                                                       return -1, -1.0, -1.0
+    53
+    54         1       4712.0   4712.0     10.9          D, I = self.search(pts,query, max(ks) + 1)
+    55
+    56         1          4.0      4.0      0.0          max_res, k_sel, r_sel = -1.0, -1, -1.0
+    57        11         32.0      2.9      0.1          for k in ks:
+    58        11         92.0      8.4      0.2              kdists = D[:, k]  # k-th (!) closest distance to other points in window
+    59        11        504.0     45.8      1.2              kdistmin=kdists.min()
+    60        11        320.0     29.1      0.7              kdistmax=kdists.max()
+    61                                                       # Normalize the distances
+    62        11        404.0     36.7      0.9              kdists=(kdists-kdistmin)/(kdistmax-kdistmin)
+    63
+    64
+    65        11       1304.0    118.5      3.0              m = kdists.mean()
+    66        11       3816.0    346.9      8.8              s = kdists.std()
+    67                                                       # Test different z values
+    68        11        505.0     45.9      1.2              rs = [m + z_i * s for z_i in self.z]
+    69
+    70        56        186.0      3.3      0.4              for r in rs:
+    71        56       1493.0     26.7      3.5                  inliers_dists = kdists[kdists <= r]  # distances that are less than r for each point
+    72        56       2521.0     45.0      5.8                  n_outliers = (kdists > r).sum() # total number of outliers for a k, r pair in the window
+    73        56        208.0      3.7      0.5                  if r < 0:
+    74                                                               continue
+    75        45        179.0      4.0      0.4                  if n_outliers == 0:
+    76        11         30.0      2.7      0.1                      break  # because the objective function divides by n_outliers
+    77
+    78        45       1889.0     42.0      4.4                  minoutlier = min(kdists[kdists > r]) * (kdistmax - kdistmin) + kdistmin
+    79        45       3742.0     83.2      8.7                  maxinlier = max(kdists[kdists <= r]) * (kdistmax - kdistmin) + kdistmin
+    80        45        232.0      5.2      0.5                  if len(inliers_dists) <= 1:
+    81                                                               continue
+    82
+    83        45       5180.0    115.1     12.0                  dmean = m - inliers_dists.mean()
+    84        45      15213.0    338.1     35.3                  dstd = s - inliers_dists.std()
+    85        45        335.0      7.4      0.8                  res = (dmean / m + dstd / s) / ((n_outliers))
+    86
+    87        41        145.0      3.5      0.3                  if res > max_res:
+    88                                                               # check if objective function gives higher output than
+    89                                                               # the previous best and keep the best selected k, r, and result
+    90         4         24.0      6.0      0.1                      max_res, k_sel, r_sel = res, k, (minoutlier+maxinlier)/2
+    91
+    92         1          3.0      3.0      0.0          return k_sel, r_sel, max_res
+
+Total time: 0.0050103 s
+File: c:\Users\giorg\OneDrive\Έγγραφα\Σχολή\Πτυχιακή\ADBOD\Techniques\dynamic.py
+Function: collect_scores at line 95
+
+Line #      Hits         Time  Per Hit   % Time  Line Contents
+==============================================================
+    95                                               def collect_scores(self, query_df):
+    96                                                   '''
+    97                                                   Επιστρέφει το score για κάθε σημείο του query_df -->
+    98                                                   1 αν είναι outlier, 0 αν δεν είναι'''
+    99         1          2.0      2.0      0.0          pts = query_df
+   100
+   101         1          3.0      3.0      0.0          if self.window_norm:
+   102                                                       pts=(pts-pts.min())/(pts.max()-pts.min())
+   103
+   104         1      45867.0  45867.0     91.5          curr_k, r, res = self._dynamic_rk(pts, pts)
+   105                                                   #print(f"chosen k:{curr_k} r:{r} with res:{res}")
+   106         1          5.0      5.0      0.0          k = curr_k + 1  # ???? αφου το k_sel είναι το k-1
+   107
+   108         1       3270.0   3270.0      6.5          D, _ = self.search(pts, pts, k)  # Το κάνει δευτερη φορά ??? αφου γίνεται ήδη μια στο _dynamic_rk????
+   109
+   110         1          4.0      4.0      0.0          score = []
+   111
+   112                                                   # ΑΠΟΚΛΕΙΕΤΑΙ ΑΥΤΟ ΝΑ ΜΗ ΓΙΝΕΤΑΙ ΠΙΟ ΓΡΗΓΟΡΑ !!!!!
+   113       100        218.0      2.2      0.4          for d in D[:, k - 1]:
+   114       100        271.0      2.7      0.5              if d < 0 or r < 0:
+   115                                                           score.append(0)
+   116        99        204.0      2.1      0.4              elif d > r and (d - r) / d > 0.05:  # το d > r δεν ειναι περιττό δεδομένου ότι ισχύει το δεύτερο???
+   117         1          3.0      3.0      0.0                  score.append(1)
+   118                                                       else:
+   119        99        254.0      2.6      0.5                  score.append(0)
+   120         1          2.0      2.0      0.0          return score
+
+Total time: 0.0051599 s
+File: c:\Users\giorg\OneDrive\Έγγραφα\Σχολή\Πτυχιακή\ADBOD\Techniques\dynamic.py
+Function: combinescores at line 123
+
+Line #      Hits         Time  Per Hit   % Time  Line Contents
+==============================================================
+   123                                               def combinescores(self, final_score: dict, currentdf: pd.DataFrame, ids: list):
+   124                                                   '''
+   125                                                   Ανάλογα το policy επιλέγει το αν καποιο σημείο είναι ανωμαλο ή όχι
+   126                                                   με βάση τα παράθυρα που έχει βγει ανώμαλο (??)'''
+   127
+   128         1      50866.0  50866.0     98.6          scores = self.collect_scores(currentdf)
+   129
+   130       100        202.0      2.0      0.4          for sc, ind in zip(scores, ids):
+   131                                                       # renew the scores of the points in the window and add the new ones in the dictionary final_score
+   132       100        267.0      2.7      0.5              if ind in final_score.keys():  # update the score of the index depending on the policy
+   133                                                           if self.policy=="or":
+   134                                                               final_score[ind] = max(final_score[ind], sc)
+   135                                                           elif self.policy=="and":
+   136                                                               final_score[ind] = min(final_score[ind], sc)
+   137                                                           elif self.policy=="first":
+   138                                                               final_score[ind] = final_score[ind]
+   139                                                           elif self.policy=="last":
+   140                                                               final_score[ind] = sc
+   141                                                           else:
+   142                                                               final_score[ind] = sc
+   143                                                       else:  # add new index to the dictionary
+   144       100        262.0      2.6      0.5                  final_score[ind] = sc
+   145         1          2.0      2.0      0.0          return final_score
+
+Total time: 0.005291 s
+File: c:\Users\giorg\OneDrive\Έγγραφα\Σχολή\Πτυχιακή\ADBOD\Techniques\dynamic.py
+Function: fit at line 148
+
+Line #      Hits         Time  Per Hit   % Time  Line Contents
+==============================================================
+   148                                               def fit(self, df):
+   149         1          6.0      6.0      0.0          final_score = {}  # dictionary with key: index of the point, value: score of the point 0 or 1 (inlier or outlier)
+   150         1          3.0      3.0      0.0          pos = 0
+   151         1         15.0     15.0      0.0          for pos in range(self.window, len(df), self.slide):
+   152                                                       # print(f"pos:{pos}, window len:{self.window}, df len:{len(df)}")
+   153                                                       # pos --> is the position of the last element of the current window
+   154                                                       # Currentdf is the current window that slides along the data given as df
+   155                                                       currentdf = df[max(pos - self.window, 0) : pos]  # ??? pos - window will never be negative ???
+   156                                                       ids = [idx for idx in range(max(pos-self.window, 0), pos)]
+   157
+   158                                                       final_score = self.combinescores(final_score, currentdf, ids)
+   159
+   160         1          4.0      4.0      0.0          if pos < len(df): # If there are still some elements left repeat process for the leftovers
+   161         1          3.0      3.0      0.0              pos = len(df)
+   162         1         21.0     21.0      0.0              currentdf = df[max(pos - self.window, 0) : pos]
+   163         1        186.0    186.0      0.4              ids = [idx for idx in range(max(pos - self.window, 0), pos)]
+   164         1      52170.0  52170.0     98.6              final_score = self.combinescores(final_score, currentdf, ids)
+   165                                                       # για 'or' policy μπορει πιο ευκολα να γινει ενα συνολικό bitwise OR μεταξύ όλων των scores
+   166                                                       # των παραθύρων που έχουν περαστεί  (?!!!!!!!!!!!!!!!!!!!!!????)
+   167
+   168         1          2.0      2.0      0.0          scores_to_return=[]
+   169       100        189.0      1.9      0.4          for idx in range(0, len(df)):
+   170       100        260.0      2.6      0.5              scores_to_return.append(final_score[idx])
+   171
+   172         1         51.0     51.0      0.1          return np.array(scores_to_return)  # 1s and 0s for each point in the series
