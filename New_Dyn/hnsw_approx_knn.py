@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.spatial.distance import cdist
 import pandas as pd
+import hnswlib
 
 
 
@@ -20,22 +21,28 @@ class dynamic_kr:
         self.policy=policy
 
 
-    def _calc_dist(self,query : np.ndarray, pts: np.ndarray):
-        return cdist(query, pts, metric=self.metric)
 
 
     def search(self,query: np.ndarray,points:np.ndarray, k: int):
         '''
         Ο πίνακας D είναι  W x W είναι οι αποστασεις του i σημείου/σειράς '''
-        dists = self._calc_dist(query,points)
+        # Initialize the HNSW index
+        index = hnswlib.Index(space='l2', dim=1)  # 'l2' is for Euclidean distance
 
-        I = (
-            np.argsort(dists, axis=1)
-            if k > 1
-            else np.expand_dims(np.argmin(dists, axis=1), axis=1)
-        )
-        D = np.take_along_axis(np.array(dists), I, axis=1)
-        return D, I
+        index.set_num_threads(-1)  # Using all available threads
+
+        # Create index
+        index.init_index(max_elements=points.shape[0], ef_construction=200, M=6)
+        # Add points
+        index.add_items(points)
+
+        # Set search parameters
+        index.set_ef(60)  # Higher values improve accuracy at the cost of speed -- ef between k and dataset size
+
+        # Perform knn for every point in the dataset
+        _, distances = index.knn_query(points, k=k)
+
+        return distances, None
 
 
     def _dynamic_rk(self, query : pd.DataFrame, pts: pd.DataFrame):

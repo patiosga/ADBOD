@@ -1,5 +1,6 @@
 import time
 from turtle import speed
+from sklearn.neighbors import KDTree
 from tqdm import tqdm
 import numpy as np
 import math
@@ -11,12 +12,16 @@ from prts import ts_recall, ts_precision
 
 from Techniques.dynamic import dynamic_kr
 from New_Dyn import optimized_dynamic
-from New_Dyn import dynamic_approx
-# from TSB_UAD_code.slidingWindows import find_length
-# from sklearn.preprocessing import MinMaxScaler
-
+from New_Dyn import parallel_opt, multi_threading
+from New_Dyn import annoy_approx_knn
+from New_Dyn import hnsw_approx_knn
+from New_Dyn import kd_tree
+from New_Dyn import faiss_exact
 import tsfel
 import variables
+
+import pyarrow.csv as pc
+import pyarrow as pa
 
 
 # A Class to run the dynamic method with different parameters and optimization and return the results
@@ -25,10 +30,17 @@ class Experiment:
     def __init__(self, slide=100, window=200, filepath = './data/YAHOO/Yahoo_A1real_1_data.out'):
 
         # Initialize the timeseries to experiment on
-        df: np.ndarray = pd.read_csv(filepath, header=None).dropna().to_numpy()
-        self.data: np.ndarray = df[:, 0].reshape(-1, 1).astype(np.float32)  # Το reshape γίνεται γιατί η cdist δέχεται 2D arrays
-        self.label: np.ndarray = df[:, 1]
+        # df: np.ndarray = pd.read_csv(filepath, header=None).dropna().to_numpy()
+        # self.data: np.ndarray = df[:, 0].reshape(-1, 1).astype(np.float32)  # Το reshape γίνεται γιατί η cdist δέχεται 2D arrays
+        # self.label: np.ndarray = df[:, 1]
         # print('Initial data loaded')
+
+        # Read CSV into a PyArrow Table (zero-copy efficient)
+        table = pc.read_csv(filepath)
+        arrays = [col.to_numpy() for col in table.columns]
+        self.data = arrays[0].reshape(-1, 1).astype(np.float32)
+        self.label: np.ndarray = arrays[1]
+
 
 
 
@@ -132,6 +144,162 @@ class Experiment:
         return scores, total_time
     
 
+    def run_dyn_parallel_opts(self, z:list=None, ks:list=None, slide=100, window=200):
+        '''
+        Run the optimized dynamic method with parallelization on the ks for loop. Possibillity to change the z and k values
+        :param z: The z values to run the dynamic method with
+        :param ks: The k values to run the dynamic method with
+        :param slide: The slide parameter of the dynamic method
+        :param window: The window parameter of the dynamic method
+        :return: The scores and the total time the method took
+        '''
+
+        dyn = parallel_opt.dynamic_kr(slide=slide, window=window)
+        if z is not None:
+            dyn.z = z
+        if ks is not None:
+            dyn.k = ks
+
+        # Run the dynamic method
+        start = time.time()
+        scores: np.ndarray = dyn.fit(self.data)
+        end = time.time()
+        total_time = end - start
+        # print(f"Dynamic method took {total_time} seconds")
+
+        return scores, total_time
+    
+
+    def run_dyn_threads_opts(self, z:list=None, ks:list=None, slide=100, window=200):
+        '''
+        Run the optimized dynamic method with multi-threading on the ks for loop. Possibillity to change the z and k values
+        :param z: The z values to run the dynamic method with
+        :param ks: The k values to run the dynamic method with
+        :param slide: The slide parameter of the dynamic method
+        :param window: The window parameter of the dynamic method
+        :return: The scores and the total time the method took
+        '''
+
+        dyn = multi_threading.dynamic_kr(slide=slide, window=window)
+        if z is not None:
+            dyn.z = z
+        if ks is not None:
+            dyn.k = ks
+
+        # Run the dynamic method
+        start = time.time()
+        scores: np.ndarray = dyn.fit(self.data)
+        end = time.time()
+        total_time = end - start
+        # print(f"Dynamic method took {total_time} seconds")
+
+        return scores, total_time
+    
+
+    def run_dyn_annoy(self, z:list=None, ks:list=None, slide=100, window=200):
+        '''
+        Run the optimized dynamic method with approximate knn using the Annoy library. Possibillity to change the z and k values
+        :param z: The z values to run the dynamic method with
+        :param ks: The k values to run the dynamic method with
+        :param slide: The slide parameter of the dynamic method
+        :param window: The window parameter of the dynamic method
+        :return: The scores and the total time the method took
+        '''
+
+        dyn = annoy_approx_knn.dynamic_kr(slide=slide, window=window)
+        if z is not None:
+            dyn.z = z
+        if ks is not None:
+            dyn.k = ks
+
+        # Run the dynamic method
+        start = time.time()
+        scores: np.ndarray = dyn.fit(self.data)
+        end = time.time()
+        total_time = end - start
+        # print(f"Dynamic method took {total_time} seconds")
+
+        return scores, total_time
+    
+
+    def run_dyn_hnsw(self, z:list=None, ks:list=None, slide=100, window=200):
+        '''
+        Run the optimized dynamic method with approximate knn using the Hnsw library. Possibillity to change the z and k values
+        :param z: The z values to run the dynamic method with
+        :param ks: The k values to run the dynamic method with
+        :param slide: The slide parameter of the dynamic method
+        :param window: The window parameter of the dynamic method
+        :return: The scores and the total time the method took
+        '''
+
+        dyn = hnsw_approx_knn.dynamic_kr(slide=slide, window=window)
+        if z is not None:
+            dyn.z = z
+        if ks is not None:
+            dyn.k = ks
+
+        # Run the dynamic method
+        start = time.time()
+        scores: np.ndarray = dyn.fit(self.data)
+        end = time.time()
+        total_time = end - start
+        # print(f"Dynamic method took {total_time} seconds")
+
+        return scores, total_time
+    
+
+    def run_dyn_kdtree(self, z:list=None, ks:list=None, slide=100, window=200):
+        '''
+        Run the optimized dynamic method with exact knn using a kdtree (scipy). Possibillity to change the z and k values
+        :param z: The z values to run the dynamic method with
+        :param ks: The k values to run the dynamic method with
+        :param slide: The slide parameter of the dynamic method
+        :param window: The window parameter of the dynamic method
+        :return: The scores and the total time the method took
+        '''
+
+        dyn = kd_tree.dynamic_kr(slide=slide, window=window)
+        if z is not None:
+            dyn.z = z
+        if ks is not None:
+            dyn.k = ks
+
+        # Run the dynamic method
+        start = time.time()
+        scores: np.ndarray = dyn.fit(self.data)
+        end = time.time()
+        total_time = end - start
+        # print(f"Dynamic method took {total_time} seconds")
+
+        return scores, total_time
+    
+
+    def run_dyn_faiss_exact(self, z:list=None, ks:list=None, slide=100, window=200):
+        '''
+        Run the optimized dynamic method with exact knn using the flat faiss index. Possibillity to change the z and k values
+        :param z: The z values to run the dynamic method with
+        :param ks: The k values to run the dynamic method with
+        :param slide: The slide parameter of the dynamic method
+        :param window: The window parameter of the dynamic method
+        :return: The scores and the total time the method took
+        '''
+
+        dyn = faiss_exact.dynamic_kr(slide=slide, window=window)
+        if z is not None:
+            dyn.z = z
+        if ks is not None:
+            dyn.k = ks
+
+        # Run the dynamic method
+        start = time.time()
+        scores: np.ndarray = dyn.fit(self.data)
+        end = time.time()
+        total_time = end - start
+        # print(f"Dynamic method took {total_time} seconds")
+
+        return scores, total_time
+    
+
     def post_processing_analytics(self, scores):
         # Calculate the recall, precision and F1 score
         recall = recall_score(self.label, scores, zero_division=1)
@@ -150,7 +318,7 @@ class Experiment:
         Test the chosen dataset with the selected mode e.g. for mode='z' test the dataset with the selected z values
         :param dataset_root_name: The root name of the dataset
         :param mode: The mode to test the dataset with --> 1. 'z' for testing with z values, 2. 'k' for testing with k values, 3. 'both' for testing with both z and k values
-        4. 'approx' for approximate knn, 5. 'opt' for code optimizations
+        4. 'approx' for approximate knn, 5. 'opt' for code optimizations, 6. 'parallel' for parallelized optimizations
 
         '''
 
@@ -177,6 +345,18 @@ class Experiment:
                 scores, ttime = exp.run_dyn_with_k_and_z_selected(z=z, ks=k, slide=slide, window=window)
             elif mode == 'opt':
                 scores, ttime = exp.run_dyn_optimized(z=z, ks=k, slide=slide, window=window)
+            elif mode == 'parallel':
+                scores, ttime = exp.run_dyn_parallel_opts(z=z, ks=k, slide=slide, window=window)
+            elif mode == 'threads':
+                scores, ttime = exp.run_dyn_threads_opts(z=z, ks=k, slide=slide, window=window)
+            elif mode == 'annoy':
+                scores, ttime = exp.run_dyn_annoy(z=z, ks=k, slide=slide, window=window)
+            elif mode == 'hnsw':
+                scores, ttime = exp.run_dyn_hnsw(z=z, ks=k, slide=slide, window=window)
+            elif mode == 'kdtree':
+                scores, ttime = exp.run_dyn_kdtree(z=z, ks=k, slide=slide, window=window)
+            elif mode == 'faiss':
+                scores, ttime = exp.run_dyn_faiss_exact(z=z, ks=k, slide=slide, window=window)
             else:
                 raise ValueError("Invalid mode")
             
@@ -259,16 +439,16 @@ class Experiment:
 
 
 
-
+import gc
 if __name__ == "__main__":
     # Run the experiment
 
-    # k=[5,6,7,8,9,10,13,17,21,30,40]
-    # z1 = list(d for d in range(4, 8))
-    # k1 = k[:int(len(k)*0.25)]
-   
 
-    speedups, f1s = Experiment.test_all_datasets(mode='opt', slide=100, window=200)
+    # k=[5,6,7,8,9,10,13,17,21,30,40]
+    z1 = list(d for d in range(4,8))
+    k1 = [6,7,8]
+
+    speedups, f1s = Experiment.test_all_datasets(mode='opt', slide=100, window=200, z=z1, k=k1)
     Experiment.plot_results(speedups, f1s)
 
 

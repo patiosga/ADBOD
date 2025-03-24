@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.spatial.distance import cdist
 import pandas as pd
+from annoy import AnnoyIndex
 
 
 
@@ -20,22 +21,25 @@ class dynamic_kr:
         self.policy=policy
 
 
-    def _calc_dist(self,query : np.ndarray, pts: np.ndarray):
-        return cdist(query, pts, metric=self.metric)
-
-
     def search(self,query: np.ndarray,points:np.ndarray, k: int):
         '''
         Ο πίνακας D είναι  W x W είναι οι αποστασεις του i σημείου/σειράς '''
-        dists = self._calc_dist(query,points)
+        annoy_index = AnnoyIndex(1, 'euclidean')
 
-        I = (
-            np.argsort(dists, axis=1)
-            if k > 1
-            else np.expand_dims(np.argmin(dists, axis=1), axis=1)
-        )
-        D = np.take_along_axis(np.array(dists), I, axis=1)
-        return D, I
+        for i, point in enumerate(points):
+            annoy_index.add_item(i, point)
+
+        annoy_index.build(n_trees=5)  # 1 δέντρο μόνο καλύτερα
+
+        D = np.zeros((points.shape[0], k))
+
+        for i, vector in enumerate(points):
+            _, distances = annoy_index.get_nns_by_vector(vector, k, include_distances=True)
+            D[i, :] = distances 
+
+        
+
+        return D, None
 
 
     def _dynamic_rk(self, query : pd.DataFrame, pts: pd.DataFrame):
@@ -46,7 +50,7 @@ class dynamic_kr:
 
         D, I = self.search(pts,query, max(ks) + 1)
 
-        max_res, k_sel, r_sel = -1.0, -1, -1.0
+        max_res, k_sel, r_sel = -1.0, 0, -1.0
         for k in ks:
             kdists = D[:, k]  # k-th (!) closest distance to other points in window
             kdistmin=kdists.min()
@@ -76,13 +80,11 @@ class dynamic_kr:
                 dmean = m - inliers_dists.mean()
                 dstd = s - inliers_dists.std()
                 res = (dmean / m + dstd / s) / ((n_outliers))
-
                 if res > max_res:
                     # check if objective function gives higher output than 
                     # the previous best and keep the best selected k, r, and result
                     max_res, k_sel, r_sel = res, k, (minoutlier+maxinlier)/2
                     
-
         return k_sel, r_sel, max_res
 
 
@@ -102,8 +104,6 @@ class dynamic_kr:
         D, _ = self.search(pts, pts, k)  # Το κάνει δευτερη φορά ??? αφου γίνεται ήδη μια στο _dynamic_rk????
         
         score = []
-
-        # ΑΠΟΚΛΕΙΕΤΑΙ ΑΥΤΟ ΝΑ ΜΗ ΓΙΝΕΤΑΙ ΠΙΟ ΓΡΗΓΟΡΑ !!!!!
         for d in D[:, k - 1]:
             if d < 0 or r < 0:
                 score.append(0)

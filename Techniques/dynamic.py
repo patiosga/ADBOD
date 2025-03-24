@@ -81,6 +81,7 @@ class dynamic_kr:
                     # check if objective function gives higher output than 
                     # the previous best and keep the best selected k, r, and result
                     max_res, k_sel, r_sel = res, k, (minoutlier+maxinlier)/2
+                    
 
         return k_sel, r_sel, max_res
 
@@ -163,6 +164,7 @@ class dynamic_kr:
             scores_to_return.append(final_score[idx])
 
         return np.array(scores_to_return)  # 1s and 0s for each point in the series
+
     
 
 

@@ -1,14 +1,12 @@
 from line_profiler import LineProfiler
-from Techniques.dynamic import dynamic_kr
+from New_Dyn.optimized_dynamic import dynamic_kr
 import numpy as np
 import pandas as pd
 
 
-filepath = './data/YAHOO/Yahoo_A1real_1_data.out'
+filepath = './data/YAHOO/Yahoo_A1real_2_data.out'
 df: np.ndarray = pd.read_csv(filepath, header=None).dropna().to_numpy()
-data: np.ndarray = df[:, 0].astype(float)
-data = np.random.rand(100)
-data = data.reshape(-1, 1)
+data: np.ndarray = df[:, 0].astype(float).reshape(-1, 1)
 
 # Create an instance of the dynamic_kr class
 clf = dynamic_kr(slide=100, window=200, window_norm=False, policy="or")

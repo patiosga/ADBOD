@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.spatial.distance import cdist
 import pandas as pd
+import faiss
 
 
 
@@ -20,22 +21,14 @@ class dynamic_kr:
         self.policy=policy
 
 
-    def _calc_dist(self,query : np.ndarray, pts: np.ndarray):
-        return cdist(query, pts, metric=self.metric)
-
-
-    def search(self,query: np.ndarray,points:np.ndarray, k: int):
-        '''
-        Ο πίνακας D είναι  W x W είναι οι αποστασεις του i σημείου/σειράς '''
-        dists = self._calc_dist(query,points)
-
-        I = (
-            np.argsort(dists, axis=1)
-            if k > 1
-            else np.expand_dims(np.argmin(dists, axis=1), axis=1)
-        )
-        D = np.take_along_axis(np.array(dists), I, axis=1)
-        return D, I
+    def search(self, query: np.ndarray, points:np.ndarray, k: int):
+        # Create an index
+        index = faiss.IndexFlatL2(1)  # 1 is the dimension of the data
+        # Add the data to the index
+        index.add(points)
+        # Find the k nearest neighbors of all the points in the data
+        D, I = index.search(points, k)
+        return D, None
 
 
     def _dynamic_rk(self, query : pd.DataFrame, pts: pd.DataFrame):

@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.spatial.distance import cdist
 import pandas as pd
+from scipy.spatial import KDTree
 
 
 
@@ -20,22 +21,19 @@ class dynamic_kr:
         self.policy=policy
 
 
-    def _calc_dist(self,query : np.ndarray, pts: np.ndarray):
-        return cdist(query, pts, metric=self.metric)
-
-
     def search(self,query: np.ndarray,points:np.ndarray, k: int):
         '''
         Ο πίνακας D είναι  W x W είναι οι αποστασεις του i σημείου/σειράς '''
-        dists = self._calc_dist(query,points)
+        # Build KDTree
+        tree = KDTree(points)
+    
+        # Find k nearest 
+        D = np.zeros((points.shape[0], k))
+        for i, point in enumerate(points):
+            distances, _ = tree.query(point, k=k)
+            D[i] = distances
 
-        I = (
-            np.argsort(dists, axis=1)
-            if k > 1
-            else np.expand_dims(np.argmin(dists, axis=1), axis=1)
-        )
-        D = np.take_along_axis(np.array(dists), I, axis=1)
-        return D, I
+        return D, None
 
 
     def _dynamic_rk(self, query : pd.DataFrame, pts: pd.DataFrame):
@@ -46,7 +44,7 @@ class dynamic_kr:
 
         D, I = self.search(pts,query, max(ks) + 1)
 
-        max_res, k_sel, r_sel = -1.0, -1, -1.0
+        max_res, k_sel, r_sel = -1.0, 0, -1.0
         for k in ks:
             kdists = D[:, k]  # k-th (!) closest distance to other points in window
             kdistmin=kdists.min()
