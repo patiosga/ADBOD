@@ -10,6 +10,7 @@ data: np.ndarray = df[:, 0].astype(float).reshape(-1, 1)
 
 # Create an instance of the dynamic_kr class
 clf = dynamic_kr(slide=100, window=200, window_norm=False, policy="or")
+clf.fit(data)
 
 lp = LineProfiler()
 lp.add_function(clf.collect_scores)

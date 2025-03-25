@@ -302,6 +302,8 @@ class Experiment:
 
     def post_processing_analytics(self, scores):
         # Calculate the recall, precision and F1 score
+        if scores.dtype == np.bool_:
+            scores = np.where(scores == True, 1, 0)
         recall = recall_score(self.label, scores, zero_division=1)
         precision = precision_score(self.label, scores, zero_division=1)
         
@@ -376,6 +378,12 @@ class Experiment:
         df = pd.read_csv('original_results.csv')
         speedups = []
         f1s = []
+
+        # Run code once for jit to compile the kr function
+        for dataset in variables.datasets:
+            times_new, _, _, f1s_new = Experiment.test_dataset(dataset_root_name=dataset, mode=mode, slide=slide, window=window, z=z, k=k)
+            break
+
         # Test the Yahoo dataset with the selected z values
         for dataset in variables.datasets:
             times_new, _, _, f1s_new = Experiment.test_dataset(dataset_root_name=dataset, mode=mode, slide=slide, window=window, z=z, k=k)
@@ -447,6 +455,7 @@ if __name__ == "__main__":
     # k=[5,6,7,8,9,10,13,17,21,30,40]
     z1 = list(d for d in range(4,8))
     k1 = [6,7,8]
+    
 
     speedups, f1s = Experiment.test_all_datasets(mode='opt', slide=100, window=200, z=z1, k=k1)
     Experiment.plot_results(speedups, f1s)

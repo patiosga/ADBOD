@@ -5,6 +5,7 @@ import numpy as np
 from scipy.spatial.distance import cdist
 import pandas as pd
 from bitarray import bitarray
+from numba import jit, prange, njit
 
 
 
@@ -22,11 +23,12 @@ class dynamic_kr:
         self.policy=policy
 
 
-    def _calc_dist(self,query : np.ndarray, pts: np.ndarray):
+    def _calc_dist(self,query , pts):
         return cdist(query, pts, metric='cityblock')
         # return np.abs(query[:, None] - query)  # χρησιμοποιειται ευκλειδια αποσταση αλλα έχω μονοδιάστατα σημεία οπότε δεν χρειάζεται να υπολογιστεί η ρίζα του τετραγωνου της διαφορας. Η απολυτη
 
-    def search(self,query: np.ndarray,points:np.ndarray, k: int):
+
+    def search(self,query,points, ks):
         '''
         Ο πίνακας D είναι  W x W είναι οι αποστασεις του i σημείου/σειράς '''
         dists = self._calc_dist(query,points)
@@ -36,78 +38,87 @@ class dynamic_kr:
         #     if k > 1
         #     else np.expand_dims(np.argmin(dists, axis=1), axis=1)
         # )
-        D = np.sort(dists, axis=1)
+        # D = np.sort(dists, axis=1)
         # I = np.argsort(dists, axis=1)
+
+        D = np.empty((dists.shape[0], dists.shape[0]), dtype=float)
+        D[:, ks] = np.partition(dists, ks, axis=1)[:, ks]
         return D, None
 
 
 
-    def _dynamic_rk(self, query: np.ndarray, pts: np.ndarray):
-        ks = [k for k in self.k if k < pts.shape[0] - 1]
+    def _dynamic_rk(self, query, pts):
+        ks = np.array([k for k in self.k if k < pts.shape[0] - 1]) # Τα k που είναι μικρότερα από το μέγεθος του παραθύρου
         
         if len(ks) == 0:
             return -1, -1.0, -1.0
 
         # Save D in memory so as to not calculate it again later
-        self.D, _ = self.search(pts, query, ks[-1] + 1)  # εδώ είχε max(ks) + 1 αλλά αυτό είναι το τελευταίο k που θα χρειαστεί!!!!!!
-
+        # self.D, _ = self.search(pts, query, ks[-1] + 1)  # εδώ είχε max(ks) + 1 αλλά αυτό είναι το τελευταίο k που θα χρειαστεί!!!!!!
+        self.D, _ = self.search(pts, query, ks)
         max_res, k_sel, r_sel = -1.0, -1, -1.
         
         # Προϋπολογισμός μέσης τιμής και τυπικής απόκλισης για κάθε k για χρήση vectorized υπολογισμών
         means = self.D[:, ks].mean(axis=0)
         stds = self.D[:, ks].std(axis=0)
 
-        for i, k in enumerate(ks):           
-            kdists: np.ndarray = self.D[:, k]  # k-th (!) closest distance to other points in window
+        # for i, k in enumerate(ks):           
+        #     kdists = self.D[:, k]  # k-th (!) closest distance to other points in window
 
-            # kdistmin=kdists.min()
-            # kdistmax=kdists.max()
-            # # Normalize the distances
-            # kdists=(kdists-kdistmin)/(kdistmax-kdistmin)
+        #     # kdistmin=kdists.min()
+        #     # kdistmax=kdists.max()
+        #     # # Normalize the distances
+        #     # kdists=(kdists-kdistmin)/(kdistmax-kdistmin)
 
-            # m = kdists.mean()
-            # s = kdists.std()
-            m = means[i]
-            s = stds[i]
+        #     # m = kdists.mean()
+        #     # s = kdists.std()
+        #     m = means[i]
+        #     s = stds[i]
            
-            # Test different z values
-            rs = [m + z_i * s for z_i in self.z]
+        #     # Test different z values
+        #     rs = m + np.array(self.z) * s
 
-            for r in rs:
-                inliers_dists = kdists[kdists <= r]  # distances that are less than r for each point
-                n_outliers = (kdists > r).sum()  # total number of outliers for a k, r pair in the window
-                if r < 0:
-                    continue
-                if n_outliers == 0:
-                    break  # because the objective function divides by n_outliers
+        #     for r in rs:
+        #         inliers_dists = kdists[kdists <= r]  # distances that are less than r for each point
+        #         n_outliers = (kdists > r).sum()  # total number of outliers for a k, r pair in the window
+        #         if r < 0:
+        #             continue
+        #         if n_outliers == 0:
+        #             break  # because the objective function divides by n_outliers
 
-                # Βρίσκει απόσταση του min outlier και max inliers ώστε τελικα να πάρει ακτίνα R που είναι στη μέση τους
-                # Δοκιμή χωρίς αυτούς τους υπολογισμούς και επιλογη r = m + z_i * s με το z_i που δίνει το μεγαλύτερο res --> απέτυχε παταγωδώς
-                # minoutlier = min(kdists[kdists > r]) * (kdistmax - kdistmin) + kdistmin
-                # maxinlier = max(kdists[kdists <= r]) * (kdistmax - kdistmin) + kdistmin
-                # r = (minoutlier + maxinlier) / 2 --> τελικά θα το κάνω έτσι αλλα αυτοί οι υπολογισμοί θα γίνονται μόνο αν res > max_res
+        #         # Βρίσκει απόσταση του min outlier και max inliers ώστε τελικα να πάρει ακτίνα R που είναι στη μέση τους
+        #         # Δοκιμή χωρίς αυτούς τους υπολογισμούς και επιλογη r = m + z_i * s με το z_i που δίνει το μεγαλύτερο res --> απέτυχε παταγωδώς
+        #         # minoutlier = min(kdists[kdists > r]) * (kdistmax - kdistmin) + kdistmin
+        #         # maxinlier = max(kdists[kdists <= r]) * (kdistmax - kdistmin) + kdistmin
+        #         # r = (minoutlier + maxinlier) / 2 --> τελικά θα το κάνω έτσι αλλα αυτοί οι υπολογισμοί θα γίνονται μόνο αν res > max_res
 
-                if len(inliers_dists) <= 1:
-                    continue
+        #         if len(inliers_dists) <= 1:
+        #             continue
 
-                dmean = m - inliers_dists.mean()
-                dstd = s - inliers_dists.std()
+        #         dmean = m - inliers_dists.mean()
+        #         dstd = s - inliers_dists.std()
                 
-                res = (dmean / m + dstd / s) / (n_outliers)
+        #         res = (dmean / m + dstd / s) / (n_outliers)
                 
-                if res > max_res:
-                    # check if objective function gives higher output than 
-                    # the previous best and keep the best selected k, r, and result
+        #         if res > max_res:
+        #             # check if objective function gives higher output than 
+        #             # the previous best and keep the best selected k, r, and result
 
-                    # This was being calculated in the loop but it can be done only if res > max_res
-                    # minoutlier = min(kdists[kdists > r]) * (kdistmax - kdistmin) + kdistmin
-                    # maxinlier = max(kdists[kdists <= r]) * (kdistmax - kdistmin) + kdistmin
+        #             # This was being calculated in the loop but it can be done only if res > max_res
+        #             # minoutlier = min(kdists[kdists > r]) * (kdistmax - kdistmin) + kdistmin
+        #             # maxinlier = max(kdists[kdists <= r]) * (kdistmax - kdistmin) + kdistmin
 
-                    # Without normalization και χωρίς επανυπολογισμό των inliers (το να μην ξαναυπολογίσω outliers είναι πιο αργό για κάποιον λόγο που μάλλον έχει να κάνει με το ότι το inliers ξαναχρηισμοποιείται πιο πάνω)
-                    minoutlier = min(kdists[kdists > r]) 
-                    maxinlier = max(inliers_dists)
+        #             # Without normalization και χωρίς επανυπολογισμό των inliers (το να μην ξαναυπολογίσω outliers είναι πιο αργό για κάποιον λόγο που μάλλον έχει να κάνει με το ότι το inliers ξαναχρηισμοποιείται πιο πάνω)
+        #             minoutlier = min(kdists[kdists > r])
+        #             maxinlier = max(inliers_dists)
 
-                    max_res, k_sel, r_sel = res, k, (minoutlier+maxinlier)/2
+        #             max_res, k_sel, r_sel = res, k, (minoutlier+maxinlier)/2
+
+        
+
+
+        k_sel, r_sel, max_res = compute_best_kr(ks, self.D, np.array(self.z), means, stds)
+
                    
 
         return k_sel, r_sel, max_res
@@ -128,7 +139,7 @@ class dynamic_kr:
 
         # D, _ = self.search(pts, pts, k)  # Το κάνει δευτερη φορά ??? αφου γίνεται ήδη μια στο _dynamic_rk????
         
-
+        # VERSION 1
         # score = []
 
         # for d in self.D[:, curr_k]:
@@ -139,23 +150,28 @@ class dynamic_kr:
         #     else:
         #         score.append(0)
 
-        d_values = self.D[:, curr_k]
+        # VERSION 2
+        # d_values = self.D[:, curr_k]
 
         # Αποφυγή διαίρεσης με 0
-        safe_mask = d_values != 0
-        ratio = np.zeros_like(d_values)  # numpy array με μηδενικά ίδιου μεγέθους με το d_values
-        ratio[safe_mask] = (d_values[safe_mask] - r) / d_values[safe_mask]  # Υπολογίζω αποτέλεσμα μόνο για τα στοιχεία που δεν είναι 0
+        # safe_mask = d_values != 0
+        # ratio = np.zeros_like(d_values, dtype=np.bool_)  # numpy array με μηδενικά/False ίδιου μεγέθους με το d_values
+        # ratio[safe_mask] = (d_values[safe_mask] - r) / d_values[safe_mask]  # Υπολογίζω αποτέλεσμα μόνο για τα στοιχεία που δεν είναι 0
 
-        # Vectorized computation
-        score = np.where((d_values > r) & (ratio > 0.05), 1, 0)
+        # # Vectorized computation
+        # score = np.where((d_values > r) & (ratio > 0.05), True, False)
 
-        # Handle cases where d < 0 or r < 0
-        score[(d_values < 0) | (r < 0)] = 0
+        # # Handle cases where d < 0 or r < 0
+        # score[(d_values < 0) | (r < 0)] = False
+
+
+        # VERSION 3
+        score = compute_scores(self.D[:, curr_k], r)
         
         return score
     
 
-    def combinescores(self, final_score: dict, currentdf: pd.DataFrame, ids: list):
+    def combinescores(self, final_score, currentdf, ids):
         '''
         Ανάλογα το policy επιλέγει το αν καποιο σημείο είναι ανωμαλο ή όχι
         με βάση τα παράθυρα που έχει βγει ανώμαλο (??)'''
@@ -180,11 +196,12 @@ class dynamic_kr:
                 #     final_score[ind] = sc
             # else:  # add new index to the dictionary
             #     final_score[ind] = sc
+
         return final_score
     
 
     def fit(self, df):
-        final_score = np.zeros(len(df), dtype=int)  # Initialize the final score array as all zeros
+        final_score = np.zeros(len(df), dtype=np.bool_)  # Initialize the final score array as all zeros
         pos = 0
         for pos in range(self.window, len(df), self.slide):
             # print(f"pos:{pos}, window len:{self.window}, df len:{len(df)}")
@@ -211,4 +228,59 @@ class dynamic_kr:
         return final_score  # 1s and 0s for each point in the series
     
 
+
+@njit
+def compute_best_kr(ks: np.ndarray, D: np.ndarray, z:np.ndarray, means: np.ndarray, stds: np.ndarray):
+    max_res, k_sel, r_sel = -1.0, -1, -1.
+
+    for i in range(len(ks)):
+        k = ks[i]
+        kdists = D[:, k]
+
+        m = means[i]
+        s = stds[i]
+
+        for j in range(len(z)):
+            r = m + z[j] * s
+            inliers_dists = kdists[kdists <= r]
+            n_outliers = (kdists > r).sum()
+
+            if r < 0:
+                continue
+            if n_outliers == 0:
+                break
+
+            dmean = m - inliers_dists.mean()
+            dstd = s - inliers_dists.std()
+            
+            res = (dmean / m + dstd / s) / (n_outliers)
+            
+            if res > max_res:
+                minoutlier = min(kdists[kdists > r])
+                maxinlier = max(inliers_dists)
+
+                max_res, k_sel, r_sel = res, k, (minoutlier+maxinlier)/2
+
+    return k_sel, r_sel, max_res
+    
+
+
+@njit
+def compute_scores(kdists: np.ndarray, r: float):
+    # score = np.zeros_like(kdists, dtype=np.bool_)
+    # for i in prange(len(kdists)):
+    #     d = kdists[i]
+    #     score[i] = (d > r and (d - r) / d > 0.05)
+
+    safe_mask = kdists != 0
+    ratio = np.zeros_like(kdists, dtype=np.bool_)  # numpy array με μηδενικά/False ίδιου μεγέθους με το kdists
+    ratio[safe_mask] = (kdists[safe_mask] - r) / kdists[safe_mask]  # Υπολογίζω αποτέλεσμα μόνο για τα στοιχεία που δεν είναι 0
+
+    # Vectorized computation
+    score = np.where((kdists > r) & (ratio > 0.05), True, False)
+
+    # Handle cases where d < 0 or r < 0
+    score[(kdists < 0) | (r < 0)] = False
+
+    return score
 

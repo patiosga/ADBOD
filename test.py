@@ -1,57 +1,30 @@
-from pyflink.datastream import StreamExecutionEnvironment
-from pyflink.datastream.functions import ProcessFunction, RuntimeContext
-from pyflink.common.typeinfo import Types
-from pyflink.datastream.state import ValueStateDescriptor
-from pyflink.common.time import Time
-from pyflink.datastream.connectors import FlinkKafkaConsumer
-from pyflink.common.serialization import SimpleStringSchema
-
-import json
-from datetime import datetime, timedelta    
-import joblib
+import dis
 import numpy as np
+from scipy.spatial.distance import cdist
 
-from New_Dyn import optimized_dynamic
+test = np.random.randn(200, 1)
 
+dists = cdist(test, test, 'euclidean')
+print(dists.shape)
 
+ks = np.array([1, 2, 3])
 
-env = StreamExecutionEnvironment.get_execution_environment()
-env.set_parallelism(1)
-
-
-kafka_source = FlinkKafkaConsumer(
-    topics='test',
-    deserialization_schema=SimpleStringSchema(),
-    properties={
-        'bootstrap.servers': 'localhost:9092', 
-        'group.id': 'test'
-        }
-    )
-
-transaction_stream = env.add_source(kafka_source)
-
-model = optimized_dynamic.dynamic_kr(slide=100, window=200, policy="or")
+import time
+start = time.time()
+for i in range(10000):
+    dists_temp = np.sort(dists, axis=1)
 
 
-class EnhancedAnomalyDetection(ProcessFunction):
-    def __init__(self):
-        pass
+    dists_temp2 = np.empty((dists.shape[0], dists.shape[0]), dtype=float)
+    dists_temp2[:, ks] = np.partition(dists, ks, axis=1)[:, ks]
 
-    def open(self, runtime_context: RuntimeContext):
-        descriptor = ValueStateDescriptor('last_transaction', Types.PICKLED_BYTE_ARRAY())
-        self.last_transaction_state = runtime_context.get_state(descriptor)
+    if not np.allclose(dists_temp[:, ks], dists_temp2[:, ks], atol=0):
+        print('Error')
+end = time.time()
+print(end - start)
 
-    def process_timeseries(self, timeseries, ctx: 'ProcessFunction.Context'):
-        transaction = json.loads(timeseries)
-        last_transaction = self.last_transaction_state.value()
-
-        if last_transaction is not None:
-            last_transaction = json.loads(last_transaction)
-            features = self.extract_features(last_transaction, transaction)
-
-            scores = model.fit(features)
+# check if the two methods are the same
+print(np.allclose(dists_temp[:, ks], dists_temp2[:, ks], atol=0))
 
 
-        self.last_transaction_state.update(json.dumps(transaction).encode())
-            
 
