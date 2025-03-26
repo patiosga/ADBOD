@@ -1,30 +1,27 @@
-import dis
 import numpy as np
 from scipy.spatial.distance import cdist
 
-test = np.random.randn(200, 1)
 
-dists = cdist(test, test, 'euclidean')
-print(dists.shape)
+points = np.array([5,1,9,4])
+ks = np.array([1,2])
 
-ks = np.array([1, 2, 3])
+dists = np.empty((points.shape[0], points.shape[0]), dtype=np.float32)
+points = points.flatten()
+# Pairwise distances
+for i in range(points.shape[0]):
+    for j in range(i, points.shape[0]):
+        dists[i, j] = np.abs(points[i] - points[j])  # Manhattan distance for multi-dimensional 
+        dists[j, i] = dists[i, j]
 
-import time
-start = time.time()
-for i in range(10000):
-    dists_temp = np.sort(dists, axis=1)
+print(dists)
+D = np.empty((dists.shape[0], ks.shape[0]), dtype=np.float32)
+for i in range(dists.shape[0]):
+    D[i, :] = np.partition(dists[i, :], ks)[ks]  # Ταξινόμηση κάθε σειράς ξεχωριστά γιατί η numba δεν υποστηρίζει args στην np.sort
+print(D)
+
+   
 
 
-    dists_temp2 = np.empty((dists.shape[0], dists.shape[0]), dtype=float)
-    dists_temp2[:, ks] = np.partition(dists, ks, axis=1)[:, ks]
-
-    if not np.allclose(dists_temp[:, ks], dists_temp2[:, ks], atol=0):
-        print('Error')
-end = time.time()
-print(end - start)
-
-# check if the two methods are the same
-print(np.allclose(dists_temp[:, ks], dists_temp2[:, ks], atol=0))
 
 
 

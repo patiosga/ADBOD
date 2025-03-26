@@ -6,6 +6,7 @@ from scipy.spatial.distance import cdist
 import pandas as pd
 from bitarray import bitarray
 from numba import jit, prange, njit
+import bisect
 
 
 
@@ -39,11 +40,20 @@ class dynamic_kr:
         #     else np.expand_dims(np.argmin(dists, axis=1), axis=1)
         # )
         # D = np.sort(dists, axis=1)
+
+        # VERSION 1
         # I = np.argsort(dists, axis=1)
 
-        D = np.empty((dists.shape[0], dists.shape[0]), dtype=float)
-        D[:, ks] = np.partition(dists, ks, axis=1)[:, ks]
-        return D, None
+        # VERSION 2
+        # D = np.empty((dists.shape[0], len(ks)), dtype=float)
+        # D[:, ks] = np.partition(dists, ks, axis=1)[:, ks]
+
+        # VERSION 3
+        D = np.partition(dists, ks, axis=1)[:, ks] # now a W x k matrix and not a W x W 
+
+        # VERSION 4
+        # D = compute_D_matrix(dists, ks)
+        return D
 
 
 
@@ -55,12 +65,12 @@ class dynamic_kr:
 
         # Save D in memory so as to not calculate it again later
         # self.D, _ = self.search(pts, query, ks[-1] + 1)  # εδώ είχε max(ks) + 1 αλλά αυτό είναι το τελευταίο k που θα χρειαστεί!!!!!!
-        self.D, _ = self.search(pts, query, ks)
-        max_res, k_sel, r_sel = -1.0, -1, -1.
+        self.D = self.search(pts, query, ks)
+        # max_res, k_sel, r_sel = -1.0, -1, -1.
         
         # Προϋπολογισμός μέσης τιμής και τυπικής απόκλισης για κάθε k για χρήση vectorized υπολογισμών
-        means = self.D[:, ks].mean(axis=0)
-        stds = self.D[:, ks].std(axis=0)
+        # means = self.D[:, ks].mean(axis=0)
+        # stds = self.D[:, ks].std(axis=0)
 
         # for i, k in enumerate(ks):           
         #     kdists = self.D[:, k]  # k-th (!) closest distance to other points in window
@@ -117,7 +127,7 @@ class dynamic_kr:
         
 
 
-        k_sel, r_sel, max_res = compute_best_kr(ks, self.D, np.array(self.z), means, stds)
+        k_sel, r_sel, max_res = compute_best_kr(ks, self.D, np.array(self.z))
 
                    
 
@@ -128,12 +138,11 @@ class dynamic_kr:
         '''
         Επιστρέφει το score για κάθε σημείο του query_df -->
         1 αν είναι outlier, 0 αν δεν είναι'''
-        pts = query_df
 
         # if self.window_norm:
         #     pts=(pts-pts.min())/(pts.max()-pts.min())
 
-        curr_k, r, _ = self._dynamic_rk(pts, pts)
+        curr_k, r, _ = self._dynamic_rk(query_df, query_df)
         #print(f"chosen k:{curr_k} r:{r} with res:{res}")
         # k = curr_k + 1  # ???? αφου το k_sel είναι το k-1
 
@@ -143,7 +152,7 @@ class dynamic_kr:
         # score = []
 
         # for d in self.D[:, curr_k]:
-        #     if d < 0:
+        #     if d < 0 or r < 0:
         #         score.append(0)
         #     elif d > r and (d - r) / d > 0.05:  # το d > r δεν ειναι περιττό δεδομένου ότι ισχύει το δεύτερο???
         #         score.append(1)
@@ -166,7 +175,12 @@ class dynamic_kr:
 
 
         # VERSION 3
-        score = compute_scores(self.D[:, curr_k], r)
+        try:
+            k_index = bisect.bisect_left(self.k, int(curr_k))  # Βρίσκει το index του k στον πίνακα self.k που είναι ταξινομημένος οπότε η αναζήτηση γίνεται με binary search
+            # Μπορεί να επιστραφεί -1 σε πολύ ειδικές περιπτώσεις (len(ks) = 0)
+        except:
+            k_index = 0
+        score = compute_scores(self.D[:, k_index], r)
         
         return score
     
@@ -178,7 +192,8 @@ class dynamic_kr:
 
         scores = self.collect_scores(currentdf)
         # Using only or policy!!!
-        np.put(final_score, ids, final_score[ids] | scores)  # bitwise OR
+        # np.put(final_score, ids, final_score[ids] | scores)  # bitwise OR
+        final_score[ids] |= scores  # bitwise OR
 
         # for sc, ind in zip(scores, ids): 
         #     final_score[ind] |= sc  # bitwise OR
@@ -229,18 +244,29 @@ class dynamic_kr:
     
 
 
-@njit
-def compute_best_kr(ks: np.ndarray, D: np.ndarray, z:np.ndarray, means: np.ndarray, stds: np.ndarray):
-    max_res, k_sel, r_sel = -1.0, -1, -1.
+@njit(fastmath=True)
+def compute_best_kr(ks: np.ndarray, D: np.ndarray, z:np.ndarray):
+    max_res, k_sel, r_sel = -1.0, -1, -1.0
 
-    for i in range(len(ks)):
+    # Δεν γίνεται με vectorization εδώ επειδή δεν το υποστηρίζει η numba
+    means = np.empty(len(ks), dtype=np.float64)
+    stds = np.empty(len(ks), dtype=np.float64)
+    for i in prange(len(ks)):
+        # k = ks[i]
+        # kdists = D[:, k]
+        kdists = D[:, i]
+        means[i] = kdists.mean()
+        stds[i] = kdists.std()
+
+    for i in prange(len(ks)):
         k = ks[i]
-        kdists = D[:, k]
+        # kdists = D[:, k]
+        kdists = D[:, i]  # D is now a W x k matrix and not a W x W where k is the number of possible k values
 
         m = means[i]
         s = stds[i]
 
-        for j in range(len(z)):
+        for j in prange(len(z)):
             r = m + z[j] * s
             inliers_dists = kdists[kdists <= r]
             n_outliers = (kdists > r).sum()
@@ -256,31 +282,59 @@ def compute_best_kr(ks: np.ndarray, D: np.ndarray, z:np.ndarray, means: np.ndarr
             res = (dmean / m + dstd / s) / (n_outliers)
             
             if res > max_res:
-                minoutlier = min(kdists[kdists > r])
+                minoutlier = min(kdists[kdists > r]) # για καποιον πολύ ενδιαφέρον λόγο αυτό είναι πιο γρήγορο από το min(outliers) όταν το outliers έχει υπολογισττεί προηγουμένως όπως το inliers
                 maxinlier = max(inliers_dists)
 
                 max_res, k_sel, r_sel = res, k, (minoutlier+maxinlier)/2
+
+    #         minoutlier = min(kdists[kdists > r])
+    #         maxinlier = max(inliers_dists)
+
+    #         results[i, j] = np.array([res, k, (minoutlier+maxinlier)/2])
+
+    # max_res = -1.0
+    # # Find the array with max res
+    # for i in range(len(ks)):
+    #     for j in range(len(z)):
+    #         if results[i, j, 0] > max_res:
+    #             max_res, k_sel, r_sel = results[i, j]
+
 
     return k_sel, r_sel, max_res
     
 
 
-@njit
+@njit(fastmath=True)
 def compute_scores(kdists: np.ndarray, r: float):
-    # score = np.zeros_like(kdists, dtype=np.bool_)
-    # for i in prange(len(kdists)):
-    #     d = kdists[i]
-    #     score[i] = (d > r and (d - r) / d > 0.05)
-
-    safe_mask = kdists != 0
-    ratio = np.zeros_like(kdists, dtype=np.bool_)  # numpy array με μηδενικά/False ίδιου μεγέθους με το kdists
-    ratio[safe_mask] = (kdists[safe_mask] - r) / kdists[safe_mask]  # Υπολογίζω αποτέλεσμα μόνο για τα στοιχεία που δεν είναι 0
-
-    # Vectorized computation
-    score = np.where((kdists > r) & (ratio > 0.05), True, False)
-
-    # Handle cases where d < 0 or r < 0
-    score[(kdists < 0) | (r < 0)] = False
+    score = np.empty(kdists.shape[0], dtype=np.bool_)
+    for i in prange(len(kdists)):
+        d = kdists[i]
+        if d < 0 or r < 0:
+            score[i] = False
+        else:
+            score[i] = (d > r and (d - r) / d > 0.05)
 
     return score
+
+
+# @njit()
+# def compute_means_stds(D: np.ndarray, ks: np.ndarray):
+#     means = np.empty(len(ks), dtype=np.float64)
+#     stds = np.empty(len(ks), dtype=np.float64)
+#     for i in prange(len(ks)):
+#         k = ks[i]
+#         kdists = D[:, k]
+#         means[i] = kdists.mean()
+#         stds[i] = kdists.std()
+
+#     return means, stds
+
+
+# @njit(parallel=True)
+# def compute_D_matrix(dists: np.ndarray, ks: np.ndarray):
+#     D = np.empty((dists.shape[0], len(ks)), dtype=float)
+#     for i in range(dists.shape[0]):
+#         D[i, :] = np.partition(dists[i, :], ks)[ks]  # Μερική ταξινόμηση κάθε σειράς ξεχωριστά γιατί η numba δεν υποστηρίζει axis στην np.partition
+
+#     return D
 

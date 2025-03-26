@@ -17,6 +17,8 @@ from New_Dyn import annoy_approx_knn
 from New_Dyn import hnsw_approx_knn
 from New_Dyn import kd_tree
 from New_Dyn import faiss_exact
+from New_Dyn import all_numba
+from New_Dyn import basic_opts
 import tsfel
 import variables
 
@@ -170,6 +172,32 @@ class Experiment:
         return scores, total_time
     
 
+    def run_dyn_basic_opts(self, z:list=None, ks:list=None, slide=100, window=200):
+        '''
+        Run the optimized dynamic method with the basic code opts (depricated). Possibillity to change the z and k values
+        :param z: The z values to run the dynamic method with
+        :param ks: The k values to run the dynamic method with
+        :param slide: The slide parameter of the dynamic method
+        :param window: The window parameter of the dynamic method
+        :return: The scores and the total time the method took
+        '''
+
+        dyn = basic_opts.dynamic_kr(slide=slide, window=window)
+        if z is not None:
+            dyn.z = z
+        if ks is not None:
+            dyn.k = ks
+
+        # Run the dynamic method
+        start = time.time()
+        scores: np.ndarray = dyn.fit(self.data)
+        end = time.time()
+        total_time = end - start
+        # print(f"Dynamic method took {total_time} seconds")
+
+        return scores, total_time
+    
+
     def run_dyn_threads_opts(self, z:list=None, ks:list=None, slide=100, window=200):
         '''
         Run the optimized dynamic method with multi-threading on the ks for loop. Possibillity to change the z and k values
@@ -300,6 +328,40 @@ class Experiment:
         return scores, total_time
     
 
+    def run_dyn_clean_numba(self, z:list=None, ks:list=None, slide=100, window=200):
+        '''
+        Run the optimized dynamic method with paraall function compiled with JIT. Possibillity to change the z and k values
+        :param z: The z values to run the dynamic method with (MUST BE A NUMPY ARRAY)
+        :param ks: The k values to run the dynamic method with (MUST BE A NUMPY ARRAY)
+        :param slide: The slide parameter of the dynamic method
+        :param window: The window parameter of the dynamic method
+        :return: The scores and the total time the method took
+        '''
+
+
+        if z is not None and ks is not None:
+            start = time.time()
+            scores = all_numba.fit(self.data, z, ks, slide, window)
+            end = time.time()
+        elif ks is not None:
+            start = time.time()
+            scores = all_numba.fit(self.data, z, ks, slide, window)
+            end = time.time()
+        elif z is not None:
+            start = time.time()
+            scores = all_numba.fit(self.data, z, ks, slide, window)
+            end = time.time()
+        else:
+            start = time.time()
+            scores = all_numba.fit(self.data, z, ks, slide, window)
+            end = time.time()
+        
+        total_time = end - start
+        # print(f"Dynamic method took {total_time} seconds")
+
+        return scores, total_time
+    
+
     def post_processing_analytics(self, scores):
         # Calculate the recall, precision and F1 score
         if scores.dtype == np.bool_:
@@ -359,6 +421,10 @@ class Experiment:
                 scores, ttime = exp.run_dyn_kdtree(z=z, ks=k, slide=slide, window=window)
             elif mode == 'faiss':
                 scores, ttime = exp.run_dyn_faiss_exact(z=z, ks=k, slide=slide, window=window)
+            elif mode == 'numba':
+                scores, ttime = exp.run_dyn_clean_numba(z=z, ks=k, slide=slide, window=window)
+            elif mode == 'basic_opts':
+                scores, ttime = exp.run_dyn_basic_opts(z=z, ks=k, slide=slide, window=window)
             else:
                 raise ValueError("Invalid mode")
             
@@ -380,9 +446,9 @@ class Experiment:
         f1s = []
 
         # Run code once for jit to compile the kr function
-        for dataset in variables.datasets:
-            times_new, _, _, f1s_new = Experiment.test_dataset(dataset_root_name=dataset, mode=mode, slide=slide, window=window, z=z, k=k)
-            break
+        # for dataset in variables.datasets:
+        #     times_new, _, _, f1s_new = Experiment.test_dataset(dataset_root_name=dataset, mode=mode, slide=slide, window=window, z=z, k=k)
+        #     break
 
         # Test the Yahoo dataset with the selected z values
         for dataset in variables.datasets:
@@ -447,17 +513,17 @@ class Experiment:
 
 
 
-import gc
 if __name__ == "__main__":
     # Run the experiment
 
-
-    # k=[5,6,7,8,9,10,13,17,21,30,40]
-    z1 = list(d for d in range(4,8))
-    k1 = [6,7,8]
+    z = np.arange(4, 20) / 2
+    k = np.array([5,6,7,8,9,10,13,17,21,30,40])
+    
+    z1 = np.arange(4,8)
+    k1 = np.array([6,7,8])
     
 
-    speedups, f1s = Experiment.test_all_datasets(mode='opt', slide=100, window=200, z=z1, k=k1)
+    speedups, f1s = Experiment.test_all_datasets(mode='both', slide=100, window=200, z=z, k=k)
     Experiment.plot_results(speedups, f1s)
 
 
