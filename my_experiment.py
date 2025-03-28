@@ -523,7 +523,7 @@ if __name__ == "__main__":
     k1 = np.array([6,7,8])
     
 
-    speedups, f1s = Experiment.test_all_datasets(mode='both', slide=100, window=200, z=z, k=k)
+    speedups, f1s = Experiment.test_all_datasets(mode='opt', slide=100, window=200, z=z1, k=k1)
     Experiment.plot_results(speedups, f1s)
 
 
