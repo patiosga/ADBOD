@@ -446,9 +446,9 @@ class Experiment:
         f1s = []
 
         # Run code once for jit to compile the kr function
-        # for dataset in variables.datasets:
-        #     times_new, _, _, f1s_new = Experiment.test_dataset(dataset_root_name=dataset, mode=mode, slide=slide, window=window, z=z, k=k)
-        #     break
+        for dataset in variables.datasets:
+            times_new, _, _, f1s_new = Experiment.test_dataset(dataset_root_name=dataset, mode=mode, slide=slide, window=window, z=z, k=k)
+            break
 
         # Test the Yahoo dataset with the selected z values
         for dataset in variables.datasets:
