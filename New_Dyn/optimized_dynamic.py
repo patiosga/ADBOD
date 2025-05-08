@@ -244,7 +244,7 @@ class dynamic_kr:
     
 
 
-@njit(fastmath=True)
+@njit(fastmath=True, cache=True)
 def compute_best_kr(ks: np.ndarray, D: np.ndarray, z:np.ndarray):
     max_res, k_sel, r_sel = -1.0, -1, -1.0
 
@@ -304,7 +304,7 @@ def compute_best_kr(ks: np.ndarray, D: np.ndarray, z:np.ndarray):
     
 
 
-@njit(fastmath=True)
+@njit(fastmath=True,cache=True)
 def compute_scores(kdists: np.ndarray, r: float):
     score = np.empty(kdists.shape[0], dtype=np.bool_)
     for i in prange(len(kdists)):

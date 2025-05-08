@@ -21,6 +21,7 @@ from New_Dyn import all_numba
 from New_Dyn import basic_opts
 import tsfel
 import variables
+import seaborn as sns
 
 import pyarrow.csv as pc
 import pyarrow as pa
@@ -441,73 +442,85 @@ class Experiment:
     @staticmethod
     def test_all_datasets(mode:str = 'z', slide=100, window=200, z:list = None, k:list = None):
         
-        df = pd.read_csv('original_results.csv')
+        # df = pd.read_csv(f'original_results_{slide}_{window}.csv')
+        df = pd.read_csv(f'original_results.csv')
         speedups = []
         f1s = []
 
         # Run code once for jit to compile the kr function
-        for dataset in variables.datasets:
-            times_new, _, _, f1s_new = Experiment.test_dataset(dataset_root_name=dataset, mode=mode, slide=slide, window=window, z=z, k=k)
-            break
+        # for dataset in variables.datasets:
+        #     times_new, _, _, f1s_new = Experiment.test_dataset(dataset_root_name=dataset, mode=mode, slide=slide, window=window, z=z, k=k)
+        #     break
 
         # Test the Yahoo dataset with the selected z values
-        for dataset in variables.datasets:
-            times_new, _, _, f1s_new = Experiment.test_dataset(dataset_root_name=dataset, mode=mode, slide=slide, window=window, z=z, k=k)
-
+        for i, dataset in enumerate(variables.datasets):
             # Original recored times
             original_total_dataset_time = df.groupby('dataset').get_group(dataset)['time'].sum()
 
-            # Calculate speedup
-            speedup = original_total_dataset_time / np.sum(times_new)
-            speedups.append(speedup)
+            speedups.append([])  # list of N speedups for each dataset
 
-            # Mean f1 score
-            f1s.append(np.mean(f1s_new))
+            N = 7  # Number of times to test each dataset
+            for j in range(N):  # Test N times to have reliable speedup results
+                times_new, _, _, f1s_new = Experiment.test_dataset(dataset_root_name=dataset, mode=mode, slide=slide, window=window, z=z, k=k)
+
+                # Calculate speedup
+                speedup = original_total_dataset_time / np.sum(times_new)
+                speedups[i].append(speedup)
+
+            # f1 score for each file - calculated only once as it does not flactuate in deterministic settings
+            f1s.append(f1s_new)
 
         return speedups, f1s
 
 
 
     @staticmethod
-    def plot_results(speedups, f1s, title=None):
-
+    def plot_results(speedups, f1s, title=None, slide=100, window=200):
         # Get the original mean f1 scores in the same order as the datasets (ίδια σειρά με τα f1s που έρχονται ως όρισμα)
-        df = pd.read_csv('original_results.csv')
+        # df = pd.read_csv(f'original_results_{slide}_{window}.csv')
+        df = pd.read_csv(f'original_results.csv')
         original_f1s = []
         for dataset in variables.datasets:
-            original_f1s.append(df.groupby('dataset').get_group(dataset)['f1'].mean())
+            original_f1s.append(df.groupby('dataset').get_group(dataset)['f1'])
+            # print(len(original_f1s[-1]))
 
-        # Calculate the difference in mean f1 scores
-        print(f1s, original_f1s)
-        f1_diff = [f1 - original_f1 for f1, original_f1 in zip(f1s, original_f1s)]
-        print(f1_diff)
-
-        plt.figure(figsize=(8, 6))
-        plt.xlabel('Speedup')
-        plt.ylabel('Difference in F1 Score')
-
-        plt.xlim(min(speedups) * 0.9, max(speedups) * 1.1)
-
-        markers = ['o', 's', 'D', '^', 'v', '*', 'p', 'X', '<', '>']
-        colors = plt.cm.rainbow(np.linspace(0, 1, len(variables.dataset_names)))
-
-        # Plot scatter points
+        # Compute F1 score differences
+        f1_diffs = []
+        f1_labels = []
         for i, dataset in enumerate(variables.dataset_names):
-            plt.scatter(speedups[i], f1_diff[i], color=colors[i], label=dataset, marker=markers[i % len(markers)])
+            diffs = list(np.array(f1s[i]) - np.array(original_f1s[i]))  # Ensure element-wise 
+            print(np.array(diffs).mean())
+            f1_diffs.extend(diffs)  # Flatten
+            f1_labels.extend([dataset] * len(diffs))  # Repeat dataset label
 
-        # Fetch updated y-limits after scatter plot
-        x_min, x_max = plt.xlim()
-        y_min, y_max = plt.ylim()
-
-        # Add vertical and horizontal dashed lines
+        # Flatten speedups similarly
+        speedup_data = []
+        speedup_labels = []
         for i, dataset in enumerate(variables.dataset_names):
-            plt.axhline(y=f1_diff[i], color=colors[i], linestyle='--', linewidth=0.5, 
-                        xmax=(speedups[i] - x_min) / (x_max - x_min))
-            plt.axvline(x=speedups[i], color=colors[i], linestyle='--', linewidth=0.5, 
-                        ymax=(f1_diff[i] - y_min) / (y_max - y_min))
+            speedup_data.extend(speedups[i])
+            speedup_labels.extend([dataset] * len(speedups[i]))  # Repeat dataset label
 
-        plt.legend()
-        plt.title(title)
+
+        fig, axes = plt.subplots(1, 2, figsize=(14, 6))
+
+
+
+        ### --- First Subplot: F1 Score Differences ---
+        axes[0].set_title("F1 Score Differences")
+        axes[0].set_xlabel("Dataset")
+        axes[0].set_ylabel("F1 Score Difference")
+        sns.boxplot(hue=f1_labels, y=f1_diffs, ax=axes[0], palette="coolwarm")
+
+
+        ### --- Second Subplot: Speedup Boxplots ---
+        axes[1].set_title("Speedup Distribution")
+        axes[1].set_xlabel("Dataset")
+        axes[1].set_ylabel("Speedup")
+        sns.boxplot(hue=speedup_labels, y=speedup_data, ax=axes[1], palette="coolwarm")
+
+
+        plt.tight_layout()
+        fig.suptitle("F1 Score Differences & Speedups", fontsize=14, y=1.02)
         plt.show()
 
 
@@ -518,12 +531,13 @@ if __name__ == "__main__":
 
     z = np.arange(4, 20) / 2
     k = np.array([5,6,7,8,9,10,13,17,21,30,40])
+    k2 = np.array(k[:int(len(k)*0.25)])
     
     z1 = np.arange(4,8)
     k1 = np.array([6,7,8])
     
 
-    speedups, f1s = Experiment.test_all_datasets(mode='opt', slide=100, window=200, z=z1, k=k1)
+    speedups, f1s = Experiment.test_all_datasets(mode='z', slide=100, window=200, z=z)
     Experiment.plot_results(speedups, f1s)
 
 

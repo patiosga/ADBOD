@@ -11,7 +11,7 @@ import bisect
 
 
     
-@njit()
+@njit(cache=True)
 def fit(df:np.ndarray, z: np.ndarray, ks: np.ndarray, slide:int, window:int):
         final_score = np.zeros(len(df), dtype=np.bool_)  # Initialize the final score array as all zeros
         pos = 0
@@ -39,7 +39,7 @@ def fit(df:np.ndarray, z: np.ndarray, ks: np.ndarray, slide:int, window:int):
 
         return final_score  # 1s and 0s for each point in the series
 
-@njit
+@njit(cache=True)
 def combinescores(final_score: np.ndarray, currentdf: np.ndarray, ids: np.ndarray, ks, z):
         '''
         Ανάλογα το policy επιλέγει το αν καποιο σημείο είναι ανωμαλο ή όχι
@@ -52,7 +52,7 @@ def combinescores(final_score: np.ndarray, currentdf: np.ndarray, ids: np.ndarra
 
         return final_score
 
-@njit(fastmath=True)
+@njit(fastmath=True, cache=True)
 def collect_scores(query_df, ks, z):
         '''
         Επιστρέφει το score για κάθε σημείο του query_df -->
@@ -70,7 +70,7 @@ def collect_scores(query_df, ks, z):
         
         return score
 
-@njit()
+@njit(cache=True)
 def _dynamic_rk(pts, ks, z, D):
         '''
         Επιστρέφει το καλύτερο k και r για το query
@@ -91,7 +91,7 @@ def _dynamic_rk(pts, ks, z, D):
         return results_kr  # κανω float το k γιατί η numba δεν υποστηρίζει int64 μαζί με float64 στο ίδιο tuple
 
 
-@njit(fastmath=True)
+@njit(fastmath=True, cache=True)
 def compute_best_kr(ks: np.ndarray, D: np.ndarray, z:np.ndarray):
     max_res, k_sel, r_sel = -1.0, 0, -1.0
 
@@ -140,7 +140,7 @@ def compute_best_kr(ks: np.ndarray, D: np.ndarray, z:np.ndarray):
     
 
 
-@njit(parallel=True)    
+@njit(parallel=True, cache=True)    
 def compute_scores(kdists: np.ndarray, r: float):
     score = np.empty(kdists.shape[0], dtype=np.bool_)
     for i in prange(len(kdists)):
@@ -154,7 +154,7 @@ def compute_scores(kdists: np.ndarray, r: float):
 
 
 
-@njit(parallel=True)
+@njit(parallel=True, cache=True)
 def search(points: np.ndarray, ks: np.ndarray):
     dists = np.empty((points.shape[0], points.shape[0]), dtype=np.float32)
     points = points.flatten()
